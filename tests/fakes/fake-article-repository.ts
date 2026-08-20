@@ -7,7 +7,11 @@ export class FakeArticleRepository implements ArticleRepository {
   async upsertArticle(article: Partial<Article>) {
     const exists = this.articles.some((a) => a.url === article.url);
     if (!exists) {
-      this.articles.push(article as Article);
+      const newArticle = {
+        ...article,
+        id: article.id ?? crypto.randomUUID(),
+      } as Article;
+      this.articles.push(newArticle);
     }
     return { error: null };
   }
