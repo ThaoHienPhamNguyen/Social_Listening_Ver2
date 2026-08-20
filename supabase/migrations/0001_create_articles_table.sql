@@ -19,3 +19,5 @@ create index if not exists articles_content_fetch_status_idx
 
 create index if not exists articles_categories_idx
   on articles using gin (categories);
+
+alter table articles enable row level security;
