@@ -5,12 +5,14 @@ export interface PendingArticle {
   id: string;
   url: string;
   fetch_attempts: number;
+  source_id: string;
+  categories: string[];
 }
 
 export interface ArticleRepository {
   upsertArticle(article: Partial<Article>): Promise<{ error: string | null }>;
   getPendingArticles(limit: number, maxAttempts: number): Promise<PendingArticle[]>;
-  markDone(id: string, fullContent: string, attempts: number): Promise<void>;
+  markDone(id: string, fullContent: string, attempts: number, categories: string[]): Promise<void>;
   markRetryOrFailed(id: string, attempts: number, maxAttempts: number): Promise<void>;
 }
 
@@ -27,7 +29,7 @@ export class SupabaseArticleRepository implements ArticleRepository {
   async getPendingArticles(limit: number, maxAttempts: number) {
     const { data, error } = await this.client
       .from('articles')
-      .select('id, url, fetch_attempts')
+      .select('id, url, fetch_attempts, source_id, categories')
       .eq('content_fetch_status', 'pending')
       .lt('fetch_attempts', maxAttempts)
       .limit(limit);
@@ -35,10 +37,10 @@ export class SupabaseArticleRepository implements ArticleRepository {
     return data as PendingArticle[];
   }
 
-  async markDone(id: string, fullContent: string, attempts: number) {
+  async markDone(id: string, fullContent: string, attempts: number, categories: string[]) {
     await this.client
       .from('articles')
-      .update({ full_content: fullContent, content_fetch_status: 'done', fetch_attempts: attempts })
+      .update({ full_content: fullContent, content_fetch_status: 'done', fetch_attempts: attempts, categories })
       .eq('id', id);
   }
 

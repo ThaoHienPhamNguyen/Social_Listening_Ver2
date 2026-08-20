@@ -1,11 +1,17 @@
 import type { ArticleRepository } from './lib/article-repository';
 import type { ContentExtractor } from './lib/article-extractor';
+import type { RssSource } from './types';
+import { categorize } from './lib/categorize';
 
 export const MAX_FETCH_ATTEMPTS = 3;
 
 export interface CrawlDeps {
   repo: ArticleRepository;
   extractor: ContentExtractor;
+  /** Feed configs, used to look up each article's default category by source_id
+   *  so categories can be recomputed against the full crawled content. If a
+   *  row's source_id isn't found here, its categories are left unchanged. */
+  sources?: RssSource[];
 }
 
 export interface CrawlResult {
@@ -27,7 +33,13 @@ export async function crawlPendingArticles(deps: CrawlDeps, limit = 200): Promis
       if (!extracted?.text) {
         throw new Error('no content extracted');
       }
-      await deps.repo.markDone(row.id, extracted.text, attempts);
+
+      const source = (deps.sources ?? []).find((s) => s.id === row.source_id);
+      const categories = source
+        ? Array.from(new Set([...row.categories, ...categorize(source.defaultCategory, extracted.text)]))
+        : row.categories;
+
+      await deps.repo.markDone(row.id, extracted.text, attempts, categories);
       result.succeeded += 1;
     } catch {
       await deps.repo.markRetryOrFailed(row.id, attempts, MAX_FETCH_ATTEMPTS);

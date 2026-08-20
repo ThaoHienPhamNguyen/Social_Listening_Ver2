@@ -3,13 +3,14 @@ import { getRequiredEnv } from './lib/env';
 import { SupabaseArticleRepository } from './lib/article-repository';
 import { DefaultContentExtractor } from './lib/article-extractor';
 import { crawlPendingArticles } from './crawl-content';
+import { sources } from '../config/sources.config';
 
 async function main() {
   const client = createClient(getRequiredEnv('SUPABASE_URL'), getRequiredEnv('SUPABASE_SERVICE_KEY'));
   const repo = new SupabaseArticleRepository(client);
   const extractor = new DefaultContentExtractor();
 
-  const result = await crawlPendingArticles({ repo, extractor });
+  const result = await crawlPendingArticles({ repo, extractor, sources });
   console.log(`processed=${result.processed} succeeded=${result.succeeded} failed=${result.failed}`);
 
   if (result.failed > 0 && result.succeeded === 0 && result.processed > 0) {

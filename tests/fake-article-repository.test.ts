@@ -48,13 +48,14 @@ describe('FakeArticleRepository', () => {
     expect(pending.map((p) => p.id)).toEqual(['1']);
   });
 
-  it('markDone sets full_content and status', async () => {
+  it('markDone sets full_content, status, and categories', async () => {
     const repo = new FakeArticleRepository();
-    repo.articles.push({ id: '1', url: 'u1', title: 't', published_at: '', source_id: 's', categories: [], snippet: '', full_content: null, content_fetch_status: 'pending', fetch_attempts: 0 });
-    await repo.markDone('1', 'full text here', 1);
+    repo.articles.push({ id: '1', url: 'u1', title: 't', published_at: '', source_id: 's', categories: ['giai_tri'], snippet: '', full_content: null, content_fetch_status: 'pending', fetch_attempts: 0 });
+    await repo.markDone('1', 'full text here', 1, ['giai_tri', 'tai_chinh']);
     expect(repo.articles[0].content_fetch_status).toBe('done');
     expect(repo.articles[0].full_content).toBe('full text here');
     expect(repo.articles[0].fetch_attempts).toBe(1);
+    expect(repo.articles[0].categories).toEqual(['giai_tri', 'tai_chinh']);
   });
 
   it('markRetryOrFailed keeps status pending under the cap, flips to failed at the cap', async () => {

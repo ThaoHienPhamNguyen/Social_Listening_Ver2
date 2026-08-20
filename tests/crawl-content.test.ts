@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { crawlPendingArticles, MAX_FETCH_ATTEMPTS } from '../src/crawl-content';
 import { FakeArticleRepository } from './fakes/fake-article-repository';
 import type { ContentExtractor } from '../src/lib/article-extractor';
-import type { Article } from '../src/types';
+import type { Article, RssSource } from '../src/types';
 
 function baseArticle(overrides: Partial<Article>): Article {
   return {
@@ -68,5 +68,55 @@ describe('crawlPendingArticles', () => {
     const result = await crawlPendingArticles({ repo, extractor }, 1);
 
     expect(result.processed).toBe(1);
+  });
+
+  it('recomputes categories from full_content and unions them with the categories captured at ingest', async () => {
+    const repo = new FakeArticleRepository();
+    repo.articles.push(
+      baseArticle({ id: '1', source_id: 'src-tai-chinh', categories: ['giai_tri'] })
+    );
+    const sources: RssSource[] = [
+      { id: 'src-tai-chinh', name: 'Test', url: 'https://example.com/rss', defaultCategory: 'tai_chinh' },
+    ];
+    const extractor: ContentExtractor = {
+      extract: async () => ({ text: 'Bài viết dài về cổ phiếu và ngân hàng, không nhắc gì đến giải trí.' }),
+    };
+
+    await crawlPendingArticles({ repo, extractor, sources });
+
+    expect(repo.articles[0].categories.sort()).toEqual(['giai_tri', 'tai_chinh'].sort());
+  });
+
+  it('does not duplicate a category already present after recompute', async () => {
+    const repo = new FakeArticleRepository();
+    repo.articles.push(
+      baseArticle({ id: '1', source_id: 'src-tai-chinh', categories: ['tai_chinh'] })
+    );
+    const sources: RssSource[] = [
+      { id: 'src-tai-chinh', name: 'Test', url: 'https://example.com/rss', defaultCategory: 'tai_chinh' },
+    ];
+    const extractor: ContentExtractor = { extract: async () => ({ text: 'Nội dung chung chung.' }) };
+
+    await crawlPendingArticles({ repo, extractor, sources });
+
+    expect(repo.articles[0].categories).toEqual(['tai_chinh']);
+  });
+
+  it('keeps the ingest-time categories unchanged when the source_id is not in the configured sources list', async () => {
+    const repo = new FakeArticleRepository();
+    repo.articles.push(
+      baseArticle({ id: '1', source_id: 'unknown-source', categories: ['tai_chinh'] })
+    );
+    const sources: RssSource[] = [
+      { id: 'src-tai-chinh', name: 'Test', url: 'https://example.com/rss', defaultCategory: 'tai_chinh' },
+    ];
+    const extractor: ContentExtractor = {
+      extract: async () => ({ text: 'Ca sĩ ra mắt MV mới trong dịp lễ, showbiz sôi động.' }),
+    };
+
+    const result = await crawlPendingArticles({ repo, extractor, sources });
+
+    expect(result).toEqual({ processed: 1, succeeded: 1, failed: 0 });
+    expect(repo.articles[0].categories).toEqual(['tai_chinh']);
   });
 });

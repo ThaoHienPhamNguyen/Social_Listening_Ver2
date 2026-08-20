@@ -20,15 +20,16 @@ export class FakeArticleRepository implements ArticleRepository {
     return this.articles
       .filter((a) => a.content_fetch_status === 'pending' && a.fetch_attempts < maxAttempts)
       .slice(0, limit)
-      .map((a) => ({ id: a.id!, url: a.url, fetch_attempts: a.fetch_attempts }));
+      .map((a) => ({ id: a.id!, url: a.url, fetch_attempts: a.fetch_attempts, source_id: a.source_id, categories: a.categories }));
   }
 
-  async markDone(id: string, fullContent: string, attempts: number) {
+  async markDone(id: string, fullContent: string, attempts: number, categories: string[]) {
     const a = this.articles.find((x) => x.id === id);
     if (a) {
       a.full_content = fullContent;
       a.content_fetch_status = 'done';
       a.fetch_attempts = attempts;
+      a.categories = categories;
     }
   }
 
