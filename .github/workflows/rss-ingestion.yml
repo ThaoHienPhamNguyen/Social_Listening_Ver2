@@ -2,7 +2,9 @@ name: RSS ingestion
 
 on:
   schedule:
-    - cron: '0 23,5,11 * * *'
+    # 08:00 / 11:00 / 20:00 Vietnam time (ICT, UTC+7) — ~1h after VTV's
+    # midday/evening Thời sự broadcasts, so source sites have updated.
+    - cron: '0 1,4,13 * * *'
   workflow_dispatch: {}
 
 jobs:
@@ -37,5 +39,3 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-
-# Trigger GitHub Actions workflow re-indexing (file was not registered after initial multi-commit push).
