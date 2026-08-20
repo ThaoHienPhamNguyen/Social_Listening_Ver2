@@ -1,12 +1,15 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Article } from '../types';
 
+export interface PendingArticle {
+  id: string;
+  url: string;
+  fetch_attempts: number;
+}
+
 export interface ArticleRepository {
   upsertArticle(article: Partial<Article>): Promise<{ error: string | null }>;
-  getPendingArticles(
-    limit: number,
-    maxAttempts: number
-  ): Promise<Pick<Article, 'id' | 'url' | 'fetch_attempts'>[]>;
+  getPendingArticles(limit: number, maxAttempts: number): Promise<PendingArticle[]>;
   markDone(id: string, fullContent: string, attempts: number): Promise<void>;
   markRetryOrFailed(id: string, attempts: number, maxAttempts: number): Promise<void>;
 }
@@ -29,7 +32,7 @@ export class SupabaseArticleRepository implements ArticleRepository {
       .lt('fetch_attempts', maxAttempts)
       .limit(limit);
     if (error || !data) return [];
-    return data as Pick<Article, 'id' | 'url' | 'fetch_attempts'>[];
+    return data as PendingArticle[];
   }
 
   async markDone(id: string, fullContent: string, attempts: number) {

@@ -1,10 +1,12 @@
 export type ContentFetchStatus = 'pending' | 'done' | 'failed';
 
+export type Category = 'tai_chinh' | 'giai_tri' | 'du_lich';
+
 export interface Article {
   id?: string;
   url: string;
   title: string;
-  published_at: string;
+  published_at: string | null;
   source_id: string;
   categories: string[];
   snippet: string;
@@ -19,7 +21,7 @@ export interface RssSource {
   id: string;
   name: string;
   url: string;
-  defaultCategory: string;
+  defaultCategory: Category;
 }
 
 export interface FeedItem {

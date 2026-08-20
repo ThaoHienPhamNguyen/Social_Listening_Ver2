@@ -1,4 +1,6 @@
-export const categoryKeywords: Record<string, string[]> = {
+import type { Category } from '../src/types';
+
+export const categoryKeywords: Record<Category, string[]> = {
   tai_chinh: [
     'chứng khoán', 'ngân hàng', 'lãi suất', 'cổ phiếu', 'tài chính',
     'đầu tư', 'vàng', 'tỷ giá', 'lạm phát', 'gdp', 'doanh nghiệp', 'kinh doanh',

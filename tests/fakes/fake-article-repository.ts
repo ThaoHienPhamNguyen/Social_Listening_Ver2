@@ -1,4 +1,4 @@
-import type { ArticleRepository } from '../../src/lib/article-repository';
+import type { ArticleRepository, PendingArticle } from '../../src/lib/article-repository';
 import type { Article } from '../../src/types';
 
 export class FakeArticleRepository implements ArticleRepository {
@@ -16,7 +16,7 @@ export class FakeArticleRepository implements ArticleRepository {
     return { error: null };
   }
 
-  async getPendingArticles(limit: number, maxAttempts: number) {
+  async getPendingArticles(limit: number, maxAttempts: number): Promise<PendingArticle[]> {
     return this.articles
       .filter((a) => a.content_fetch_status === 'pending' && a.fetch_attempts < maxAttempts)
       .slice(0, limit)
