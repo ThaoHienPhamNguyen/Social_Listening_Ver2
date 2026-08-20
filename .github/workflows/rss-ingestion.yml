@@ -37,3 +37,5 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+
+# Trigger GitHub Actions workflow re-indexing (file was not registered after initial multi-commit push).
