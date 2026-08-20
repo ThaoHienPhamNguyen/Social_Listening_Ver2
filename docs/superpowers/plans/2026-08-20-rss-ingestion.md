@@ -6,7 +6,7 @@
 
 **Architecture:** Two GitHub Actions jobs in one workflow, `crawl-content` gated on `ingest-rss` via `needs:`. `ingest-rss` parses feeds and upserts stub rows (`content_fetch_status = pending`). `crawl-content` picks up pending rows, fetches the source page, extracts the article body, and marks the row `done`/`failed`. All shared state lives in one Supabase table (`articles`) — no separate queue service. All I/O (feed fetching, content extraction, Supabase reads/writes) sits behind small interfaces so the core logic is unit-testable without network or a live database.
 
-**Tech Stack:** Node.js (>=20) + TypeScript, `rss-parser`, `@extractus/article-extractor`, `@supabase/supabase-js`, `vitest` for tests, `tsx` to run TS entrypoints directly.
+**Tech Stack:** Node.js (>=22) + TypeScript, `rss-parser`, `@extractus/article-extractor`, `@supabase/supabase-js`, `vitest` for tests, `tsx` to run TS entrypoints directly.
 
 **Spec:**
 - `docs/superpowers/specs/2026-08-20-rss-ingestion-design.md` (this sub-project's design)
@@ -22,7 +22,7 @@
 - Max content-fetch retry attempts: `3` (`MAX_FETCH_ATTEMPTS`). After that, `content_fetch_status` stays `failed` permanently — no infinite retry.
 - `ingest-rss` and `crawl-content` are separate GitHub Actions jobs (`needs:` chain), never merged into one job — failure isolation, per prior approved decision.
 - No queue service — handoff between the two jobs is entirely via the `content_fetch_status` column on `articles`.
-- Node version floor: `>=20`.
+- Node version floor: `>=22` (bumped from the originally planned `>=20` — see Task 1 ruling in the SDD ledger: the pinned `@supabase/supabase-js@^2.45.0` range resolves to a version whose transitive deps require Node ≥22).
 
 ---
 
@@ -89,7 +89,7 @@ tests/
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=20" },
+  "engines": { "node": ">=22" },
   "scripts": {
     "test": "vitest run",
     "ingest": "tsx src/run-ingest.ts",
@@ -105,7 +105,7 @@ tests/
     "tsx": "^4.16.0",
     "vitest": "^2.0.0",
     "js-yaml": "^4.1.0",
-    "@types/node": "^20.14.0"
+    "@types/node": "^22.0.0"
   }
 }
 ```
@@ -1184,7 +1184,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - run: npm ci
       - run: npm run ingest
         env:
@@ -1198,7 +1198,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - run: npm ci
       - run: npm run crawl
         env:
