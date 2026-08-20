@@ -14,7 +14,7 @@ export interface CrawlResult {
   failed: number;
 }
 
-export async function crawlPendingArticles(deps: CrawlDeps, limit = 50): Promise<CrawlResult> {
+export async function crawlPendingArticles(deps: CrawlDeps, limit = 200): Promise<CrawlResult> {
   const result: CrawlResult = { processed: 0, succeeded: 0, failed: 0 };
   const pending = await deps.repo.getPendingArticles(limit, MAX_FETCH_ATTEMPTS);
 
