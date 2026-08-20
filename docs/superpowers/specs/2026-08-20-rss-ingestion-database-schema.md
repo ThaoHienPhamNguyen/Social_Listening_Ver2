@@ -52,6 +52,17 @@ erDiagram
 
 `alter table articles enable row level security;` — **bật nhưng chưa có policy nào**. An toàn ở giai đoạn hiện tại vì toàn bộ ghi/đọc đều qua `service_role` key (bypass RLS) trong GitHub Actions; chặn hoàn toàn mọi truy cập qua `anon`/`publishable` key cho tới khi có policy — cần nhớ thêm policy nếu sau này dashboard (sub-project 4) đọc trực tiếp từ Supabase bằng key public.
 
+## Nguồn RSS (`config/sources.config.ts`) — 4 báo × 3 danh mục = 12 feed
+
+Đây là toàn bộ nguồn ghi vào `source_id`/`categories` của bảng `articles`. Danh sách này verify live lần cuối 2026-08-20 — báo có thể đổi đường dẫn feed theo thời gian, cần re-check nếu một nguồn tự nhiên trả về 0 bài.
+
+| Nguồn | tài chính | giải trí | du lịch |
+|---|---|---|---|
+| VnExpress | [/rss/kinh-doanh.rss](https://vnexpress.net/rss/kinh-doanh.rss) | [/rss/giai-tri.rss](https://vnexpress.net/rss/giai-tri.rss) | [/rss/du-lich.rss](https://vnexpress.net/rss/du-lich.rss) |
+| Dân Trí | [/rss/kinh-doanh.rss](https://dantri.com.vn/rss/kinh-doanh.rss) | [/rss/giai-tri.rss](https://dantri.com.vn/rss/giai-tri.rss) | [/rss/du-lich.rss](https://dantri.com.vn/rss/du-lich.rss) |
+| Thanh Niên | [/rss/kinh-te.rss](https://thanhnien.vn/rss/kinh-te.rss) | [/rss/giai-tri.rss](https://thanhnien.vn/rss/giai-tri.rss) | [/rss/du-lich.rss](https://thanhnien.vn/rss/du-lich.rss) |
+| Tuổi Trẻ | [/rss/kinh-doanh.rss](https://tuoitre.vn/rss/kinh-doanh.rss) | [/rss/giai-tri.rss](https://tuoitre.vn/rss/giai-tri.rss) | [/rss/du-lich.rss](https://tuoitre.vn/rss/du-lich.rss) |
+
 ## Known gaps liên quan tới schema này (chưa xử lý, xem [[project_rss_ingestion_subproject]])
 
 - `updated_at` không có trigger tự cập nhật.
