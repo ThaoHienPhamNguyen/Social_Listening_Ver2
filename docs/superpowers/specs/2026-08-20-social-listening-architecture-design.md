@@ -45,6 +45,20 @@ Facebook và Threads (cùng thuộc Meta) không có API trending công khai nà
 | **Supabase (Postgres)** | Lưu trữ + nơi trung chuyển dữ liệu giữa các job. Bảng chính: `candidate_topics` (output discovery), `topic_social_data` (output deep-crawl), `topic_trends` (output cuối, gắn danh mục Overall/Tài chính/Giải trí/Du lịch). |
 | **Vercel** | Chỉ host dashboard, **read-only**, SELECT từ Supabase. Không cron, không crawl, không compute — nên không đụng giới hạn 1 lần/ngày hay timeout 60s của Vercel Hobby. |
 
+### Sơ đồ 3 lớp
+
+```mermaid
+flowchart LR
+    L1["1. Discovery\nNguồn miễn phí/rẻ\nPhát hiện topic hot"]
+    L2["2. Processing\nGitHub Actions\nXếp hạng + deep-crawl + tính trend"]
+    L3["3. Storage & View\nSupabase lưu dữ liệu\nVercel hiển thị dashboard"]
+
+    L1 -->|shortlist top 10–15 topic| L2
+    L2 -->|kết quả trend đã chuẩn hoá| L3
+```
+
+Tóm tắt cách đọc: **Discovery tìm đúng chủ đề**, **GitHub Actions xử lý theo lịch**, còn **Supabase và Vercel lưu trữ rồi hiển thị kết quả**. Apify chỉ xuất hiện bên trong lớp Processing khi topic đã qua shortlist.
+
 ## 4. Luồng dữ liệu
 
 ```mermaid
