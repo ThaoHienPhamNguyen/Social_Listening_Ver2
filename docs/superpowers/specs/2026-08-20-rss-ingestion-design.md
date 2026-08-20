@@ -27,6 +27,8 @@ flowchart LR
 
 ## 3. Data model — bảng `articles` (Supabase/Postgres)
 
+> Sơ đồ + chi tiết cột/index/RLS đầy đủ, khớp đúng migration đã apply thực tế: [2026-08-20-rss-ingestion-database-schema.md](./2026-08-20-rss-ingestion-database-schema.md).
+
 | Cột | Ý nghĩa |
 |---|---|
 | `id` | PK |
