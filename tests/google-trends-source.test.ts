@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeGrowthRate, toRawCandidates } from '../src/lib/google-trends-source';
+import { normalizeGrowthRate, toRawCandidates, resolveGoogleTrendsApi } from '../src/lib/google-trends-source';
 
 describe('normalizeGrowthRate', () => {
   it('converts a percentage growth figure to the same ratio unit used by YouTube/RSS sources', () => {
@@ -33,5 +33,18 @@ describe('toRawCandidates', () => {
     ]);
     expect(result).toHaveLength(1);
     expect(result[0]).toEqual({ keyword: 'bitcoin', metric_value: 9000, growth_rate: 0.5 });
+  });
+});
+
+describe('resolveGoogleTrendsApi', () => {
+  it('returns the import as-is when dailyTrends is directly present', () => {
+    const fakeApi = { dailyTrends: () => {} };
+    expect(resolveGoogleTrendsApi(fakeApi)).toBe(fakeApi);
+  });
+
+  it('unwraps .default when the import is double-wrapped (this library\'s actual CJS/ESM interop shape under this project\'s "type": "module" + tsx execution — verified live in production 2026-08-21)', () => {
+    const fakeApiInstance = { dailyTrends: () => {} };
+    const doubleWrapped = { default: fakeApiInstance };
+    expect(resolveGoogleTrendsApi(doubleWrapped)).toBe(fakeApiInstance);
   });
 });
