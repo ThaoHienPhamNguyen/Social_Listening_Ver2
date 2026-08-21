@@ -1,87 +1,86 @@
-# Dashboard — Design Spec (sub-project 4, with a scoped slice of sub-project 3)
+# Dashboard — Spec (sub-project 4, gộp một phần thu hẹp của sub-project 3)
 
-## Status
+**Ngày:** 2026-08-21
+**Trạng thái:** Approved, chờ viết plan
 
-Approved via chat brainstorm 2026-08-21. Supersedes the original roadmap order (2b before 3/4) at the user's explicit request: build the dashboard now, using data already live from sub-project 1 (RSS ingestion) and sub-project 2a (discovery layer). Apify deep-crawl (2b) is deferred until after this ships.
+## Vì sao gộp một phần sub-project 3 vào đây
 
-## Why this pulls in part of sub-project 3
+Sub-project 3 ("Trend / share-of-voice computation") vốn cố tình để chưa định nghĩa công thức, chờ tự nó được brainstorm riêng. Spec này chỉ giải quyết **đúng 2 công thức dashboard cần hiển thị** — trending score và share of voice — dựa trên dữ liệu đã có sẵn từ sub-project 2a. Không xây một framework tính trend tổng quát, không đụng tới sentiment, không thêm job backend hay bảng mới. Phần nào nằm ngoài phạm vi này vẫn thuộc về 1 buổi brainstorm sub-project 3 đầy đủ hơn sau này, nếu thực sự cần.
 
-Sub-project 3 ("Trend / share-of-voice computation") was deliberately left undefined in the architecture spec, pending its own brainstorm. This spec resolves **only the two formulas the dashboard needs to render** — trending score and share of voice — using the data already produced by sub-project 2a. It does not attempt a general trend-computation framework, does not touch sentiment, and does not add new backend jobs or schema. Anything beyond what's specified here still belongs to a future, fuller sub-project 3 brainstorm if one turns out to be needed.
+## Tham khảo: ver 1
 
-## Reference: ver 1 prior art
+Một lần làm trước đó (repo khác, đã reset, memory còn giữ lại ở project cũ dưới tên `project-overview`/`apify-sources`) từng xây dashboard Next.js tương tự nhưng trên schema khác (Prisma/Postgres, model `Topic`/`Post`/`BuzzSnapshot`, nuôi bởi crawler tự viết). Bố cục trang và **hình dạng công thức** được tham khảo lại ở đây:
 
-An earlier attempt at this project (a separate, since-reset repo, memory preserved as `project-overview` / `apify-sources` under that old project's memory store) built a comparable Next.js dashboard against a different schema (Prisma/Postgres, `Topic`/`Post`/`BuzzSnapshot` models fed by custom crawlers). Its page layout and formula *shapes* are reused here as a proven reference:
+- `trendingScore = buzzVolume / avg7dBuzz × 100`, cap ở 999, mặc định 50 nếu chưa có lịch sử
+- `shareOfVoice = topicBuzz / sectorTotalBuzz × 100` theo ngày
+- Route theo sector: `/tai-chinh` (xanh lá `#16a34a`), `/giai-tri` (hồng `#af006e`), `/du-lich` (xanh dương `#3b82f6`)
 
-- `trendingScore = buzzVolume / avg7dBuzz × 100`, capped at 999, default 50 with no history
-- `shareOfVoice = topicBuzz / sectorTotalBuzz × 100` per day
-- Sector routing: `/tai-chinh` (green `#16a34a`), `/giai-tri` (pink `#af006e`), `/du-lich` (blue `#3b82f6`)
+Code fetch data, schema DB, model Prisma của ver 1 **không** tái sử dụng — schema ver 2 (`articles`, `candidate_topics`) khác cấu trúc hoàn toàn (không có entity `Topic` cố định; keyword được phát hiện lại mỗi ngày, không phải danh sách theo dõi định sẵn).
 
-Its actual data-fetching code, DB schema, and Prisma models do **not** carry over — ver 2's schema (`articles`, `candidate_topics`) is structurally different (no persistent `Topic` entity; keywords are re-discovered daily, not pre-defined watch targets).
+## Kiến trúc
 
-## Architecture
+- Project Next.js 15 (App Router) + Tailwind CSS mới, đặt tại `dashboard/` (root repo), có `package.json` riêng — tách khỏi các script ingestion ở root (chạy bằng `tsx`, `"type": "module"`) để tránh xung đột dependency/build.
+- Deploy lên Vercel, Root Directory = `dashboard/`. Read-only: không cron, không crawl logic, đúng kiến trúc đã chốt ở `2026-08-20-social-listening-architecture-design.md`.
+- Không dùng ORM. Fetch data bằng `@supabase/supabase-js` gọi thẳng, **chỉ trong Server Component**, xác thực bằng **service-role key** của Supabase, lưu ở biến môi trường Vercel, không bao giờ gửi ra trình duyệt.
+- **Vì sao service-role chứ không phải anon key:** cả `articles` và `candidate_topics` đã bật RLS nhưng chưa có policy nào (migration `0001`, `0003`) — anon key hiện tại không đọc được bảng nào cả. Service-role bypass RLS theo thiết kế, nên dùng được ngay mà không cần mở lại quyết định hoãn RLS.
 
-- New Next.js 15 (App Router) + Tailwind CSS project at `dashboard/` (repo root), with its own `package.json` — kept separate from the root project's ingestion scripts (`tsx`-run, `"type": "module"`) to avoid dependency/build conflicts.
-- Deployed to Vercel with Root Directory = `dashboard/`. Read-only: no cron, no crawl logic, per the architecture already fixed in `2026-08-20-social-listening-architecture-design.md`.
-- No ORM. Data fetching uses `@supabase/supabase-js` directly from **Server Components only**, authenticated with the Supabase **service-role key**, stored as a Vercel environment variable never sent to the browser.
-- **Why service-role, not anon key:** both `articles` and `candidate_topics` have RLS enabled with zero policies defined (migrations `0001`, `0003`) — the anon key currently cannot read either table. Service-role bypasses RLS by design, so this works today without reopening the deferred RLS decision.
+## Quyền truy cập
 
-## Access
+Public, không cần đăng nhập — dữ liệu hiển thị (tin tức/trend công khai đã tổng hợp) không nhạy cảm. Xem lại quyết định này nếu sau này có thay đổi.
 
-Public, no authentication — the data displayed (aggregated public news/trends) is not sensitive. Revisit if that changes.
+## Các trang
 
-## Pages
+4 route, theo đúng convention URL sector của ver 1:
 
-Four routes, mirroring ver 1's sector URL convention:
+- `/` — Overview: gộp cả 3 category
+- `/tai-chinh`, `/giai-tri`, `/du-lich` — lọc theo 1 category
 
-- `/` — Overview: all three categories blended
-- `/tai-chinh`, `/giai-tri`, `/du-lich` — filtered to one category
+Mỗi trang có 2 phần:
 
-Each page renders two sections:
+1. **Hot topics** — `candidate_topics` đã shortlist (`is_shortlisted = true`) cho ngày gần nhất có dữ liệu, nhóm theo `source` (google_trends / youtube / rss), mỗi dòng hiển thị keyword, trending score, share of voice.
+2. **Recent articles** — 20 bài `articles` mới nhất (theo `published_at desc`), lọc theo `categories` chứa category tương ứng ở trang sector, không lọc (mới nhất toàn bộ) ở trang Overview.
 
-1. **Hot topics** — shortlisted `candidate_topics` (`is_shortlisted = true`) for the most recent `date` with data, grouped by `source` (google_trends / youtube / rss), each row showing keyword, trending score, share of voice.
-2. **Recent articles** — latest 20 `articles` rows (by `published_at desc`), filtered by `categories` array containment for sector pages, unfiltered (most recent overall) for the Overview page.
+Lọc category dùng đúng giá trị snake_case đã có trong `config/sources.config.ts` (`tai_chinh`, `giai_tri`, `du_lich`) khớp với `candidate_topics.category_hint` và `articles.categories` (đều là `text[]`).
 
-Category filter uses the existing snake_case values from `config/sources.config.ts` (`tai_chinh`, `giai_tri`, `du_lich`) against `candidate_topics.category_hint` and `articles.categories` (both `text[]`).
+## Công thức
 
-## Formulas
+### Trending score — tái dùng `growth_rate` có sẵn
 
-### Trending score — reuse `growth_rate` as-is
+`candidate_topics.growth_rate` (tính trong `rank-and-select.ts`) vốn đã là: `(metric_value hôm nay − trung bình metric_value 7 ngày trước) / trung bình đó`, sentinel `999` cho keyword chưa có lịch sử tuần trước. Đã được chuẩn hoá cùng 1 đơn vị (tỷ lệ) trên cả 3 nguồn (`normalizeGrowthRate()` trong `google-trends-source.ts`). Dashboard hiển thị trực tiếp giá trị này (nhân `× 100` để ra dạng phần trăm) làm "Trending score" — **không tính lại, không sửa backend**.
 
-`candidate_topics.growth_rate` (computed in `rank-and-select.ts`) is already: `(metric_value_today − avg(metric_value over prior 7 days)) / avg(...)`, with a `999` sentinel for keywords with no prior-week history. It is already normalized to the same ratio unit across all three sources (`normalizeGrowthRate()` in `google-trends-source.ts`). The dashboard displays this value directly (as a percentage, i.e. `× 100`) as "Trending score" — **no new computation, no backend change**.
+### Share of voice — tính lúc render, không lưu vào DB
 
-### Share of voice — computed at render time, not persisted
-
-Because `metric_value` units differ by source (Google Trends traffic score, YouTube view count, RSS article-mention count), share of voice is computed **per source, within one category and one date** — never blended across sources:
+Vì đơn vị `metric_value` khác nhau giữa các nguồn (Google Trends = điểm traffic, YouTube = lượt xem, RSS = số bài báo chứa keyword), share of voice tính **riêng theo từng nguồn, trong phạm vi 1 category + 1 ngày** — không gộp giữa các nguồn:
 
 ```
 share_of_voice(keyword) = metric_value(keyword)
-  / Σ metric_value(all candidates, same source + same category + same date)
+  / Σ metric_value(tất cả candidate cùng nguồn + cùng category + cùng ngày)
   × 100
 ```
 
-- Denominator is **all evaluated candidates** for that source/category/date (not just the shortlisted top 10) — matches ver 1's `sectorTotalBuzz` being a true total, not a top-N total.
-- A keyword tagged with multiple categories (`category_hint` array) counts at **full weight** in each category it belongs to (not split) — documented simplification, revisit only if it visibly distorts a category's totals.
-- Computed inline in the dashboard's data-fetching layer from the already-fetched `candidate_topics` rows for that page — **no new Supabase column, no change to `rank-and-select.ts`**.
-- Overview page (blended categories): share of voice shown per source using the *keyword's own matched categories* as the denominator scope (i.e., same per-category number as would show on that keyword's sector page) — there is no single cross-category "overall" share of voice, since the categories aren't mutually exclusive partitions of one total.
+- Mẫu số là **toàn bộ candidate đã evaluate** cho nguồn/category/ngày đó (không chỉ top 10 đã shortlist) — giống cách `sectorTotalBuzz` của ver 1 là tổng thật, không phải tổng của top-N.
+- Keyword gắn nhiều category (`category_hint` là mảng) tính **full trọng số** ở từng category nó thuộc về (không chia đều) — simplification, ghi rõ trong spec, chỉ xem lại nếu làm tổng của 1 category bị lệch rõ rệt.
+- Tính ngay trong tầng data-fetching của dashboard, từ các dòng `candidate_topics` đã fetch cho trang đó — **không thêm cột Supabase mới, không sửa `rank-and-select.ts`**.
+- Trang Overview (gộp category): share of voice hiển thị theo từng nguồn, dùng đúng phạm vi category mà keyword đó thuộc về làm mẫu số (giống hệt con số sẽ hiện ở trang sector của keyword đó) — không có 1 con số "share of voice toàn bộ" duy nhất, vì các category không phải phân vùng loại trừ lẫn nhau của 1 tổng chung.
 
-## Error handling
+## Xử lý lỗi
 
-- No `candidate_topics` row for the requested date (cron hasn't run yet, or a fresh deploy before first run) → empty-state message per section, not a crash.
-- Supabase query failure → caught per-section, rendered as an inline error state; one section failing does not take down the whole page.
+- Không có dòng `candidate_topics` nào cho ngày cần hiển thị (cron chưa chạy, hoặc vừa deploy trước lần chạy đầu) → hiện empty-state rõ ràng theo từng phần, không crash trang.
+- Supabase query lỗi → bắt lỗi riêng theo từng phần, hiện trạng thái lỗi inline; 1 phần lỗi không kéo sập cả trang.
 
 ## Testing
 
-Following the project's established TDD convention: vitest-test the pure data-shaping functions (grouping by source, category filtering, share-of-voice calculation) as plain functions independent of Next.js/Supabase wiring. No E2E tests for the MVP (YAGNI).
+Theo đúng convention TDD của project: viết vitest cho các hàm xử lý dữ liệu thuần (nhóm theo source, lọc theo category, tính share of voice) tách biệt khỏi phần wiring Next.js/Supabase. Không viết E2E cho bản MVP (YAGNI).
 
-## Explicitly out of scope for this spec
+## Ngoài phạm vi spec này
 
-- Sentiment analysis (no data source for it yet — that's Apify/2b territory)
-- Historical charts / time-series views (`/trending`, `/analytics`, topic-detail pages from ver 1) — revisit once there's more than a few days of history
-- Any general-purpose trend-computation framework beyond the two formulas above
-- Authentication
-- Apify deep-crawl (2b) — explicitly deferred, comes after this ships
+- Sentiment analysis (chưa có nguồn dữ liệu — thuộc phạm vi Apify/2b)
+- Biểu đồ lịch sử/theo thời gian (`/trending`, `/analytics`, trang chi tiết topic của ver 1) — xem lại khi có nhiều hơn vài ngày dữ liệu
+- Bất kỳ framework tính trend tổng quát nào ngoài 2 công thức trên
+- Đăng nhập/xác thực
+- Apify deep-crawl (2b) — cố tình hoãn, làm sau khi dashboard này xong
 
-## Known simplifications (carry forward, not fixed here)
+## Simplification đã biết (giữ nguyên, không xử lý ở đây)
 
-- Share of voice's "full weight per category" for multi-category keywords can over-count a category's total if a keyword spans multiple categories — acceptable for MVP, revisit if it produces visibly wrong-looking totals.
-- Trending score displayed as `growth_rate × 100` inherits every caveat already documented for `growth_rate` in `2026-08-21-discovery-layer-database-schema.md` (recomputed every run for non-Google-Trends sources, frozen per-day for Google Trends, 999 sentinel, UTC-vs-ICT date coupling).
+- "Full trọng số theo từng category" của share of voice có thể làm tổng của 1 category bị đội lên nếu keyword thuộc nhiều category — chấp nhận được cho MVP, xem lại nếu tổng hiển thị sai lệch rõ.
+- Trending score hiển thị (`growth_rate × 100`) kế thừa toàn bộ lưu ý đã ghi ở `growth_rate` trong `2026-08-21-discovery-layer-database-schema.md` (recompute mỗi lần chạy với nguồn không phải Google Trends, đứng yên theo ngày với Google Trends, sentinel 999, date tính theo UTC chứ không phải ICT).
