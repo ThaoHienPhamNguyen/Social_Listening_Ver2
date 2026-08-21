@@ -14,7 +14,7 @@ RSS ingestion sub-project. See `docs/superpowers/specs/2026-08-20-rss-ingestion-
 ```bash
 export SUPABASE_URL=...
 export SUPABASE_SERVICE_KEY=...
-npm run ingest   # parses all 12 feeds, upserts pending articles
+npm run ingest   # parses all 15 feeds, upserts pending articles
 npm run crawl    # fetches full content for pending articles
 ```
 
@@ -24,7 +24,11 @@ npm run crawl    # fetches full content for pending articles
 npm test
 ```
 
+## Status
+
+Live in production since 2026-08-20 — GitHub Actions (`.github/workflows/rss-ingestion.yml`, cron 08:00/11:00/20:00 ICT) + Supabase project "Social Listening ver 2" (ap-southeast-2). See `docs/superpowers/specs/2026-08-20-rss-ingestion-database-schema.md` for the schema and current source list.
+
 ## Known pending items
 
-- Supabase project not yet created in any environment — required before `run-ingest`/`run-crawl` can succeed for real.
 - Feed URLs in `config/sources.config.ts` were verified live on 2026-08-20; re-check if ingestion starts silently returning 0 items for a source.
+- Known gaps not yet fixed: `full_content` stores raw HTML (not stripped), repository write errors are silently discarded, no fetch timeouts, RLS enabled with no policies yet. See the database schema doc for details.
