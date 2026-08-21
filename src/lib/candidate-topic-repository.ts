@@ -25,10 +25,18 @@ export class SupabaseCandidateTopicRepository implements CandidateTopicRepositor
   }
 
   async getTodayCandidates(date: string) {
+    // Supabase-hosted PostgREST applies a project-level "Max rows" cap
+    // (commonly 1000 by default) that silently truncates unbounded reads.
+    // 5000 is a generous safety net, not a tuned value. Ordering by
+    // metric_value descending means that if the cap is ever hit, the
+    // highest-signal candidates survive, best serving rankAndSelect's
+    // downstream top-N selection.
     const { data, error } = await this.client
       .from('candidate_topics')
       .select('*')
-      .eq('date', date);
+      .eq('date', date)
+      .order('metric_value', { ascending: false })
+      .limit(5000);
     if (error) throw new Error(error.message);
     return (data ?? []) as CandidateTopic[];
   }

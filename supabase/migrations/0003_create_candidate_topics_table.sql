@@ -20,6 +20,8 @@ create index if not exists candidate_topics_shortlisted_idx
 
 alter table candidate_topics enable row level security;
 
+drop trigger if exists candidate_topics_set_updated_at on candidate_topics;
+
 create trigger candidate_topics_set_updated_at
   before update on candidate_topics
   for each row

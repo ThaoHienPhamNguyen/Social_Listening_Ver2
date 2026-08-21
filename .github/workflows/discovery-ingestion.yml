@@ -2,8 +2,10 @@ name: Discovery ingestion
 
 on:
   schedule:
-    # Same cadence as RSS ingestion — 08:00 / 11:00 / 20:00 Vietnam time (ICT, UTC+7).
-    - cron: '0 1,4,13 * * *'
+    # 09:00 / 12:00 / 21:00 Vietnam time (ICT, UTC+7) — 1h after RSS
+    # ingestion's schedule, so this doesn't contend for GitHub Actions
+    # runners or read the articles table while ingest-rss is writing to it.
+    - cron: '0 2,5,14 * * *'
   workflow_dispatch: {}
 
 jobs:

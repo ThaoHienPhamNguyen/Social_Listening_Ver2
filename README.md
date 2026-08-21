@@ -44,7 +44,10 @@ npm test
 
 Live in production since 2026-08-20 — GitHub Actions (`.github/workflows/rss-ingestion.yml`, cron 08:00/11:00/20:00 ICT) + Supabase project "Social Listening ver 2" (ap-southeast-2). See `docs/superpowers/specs/2026-08-20-rss-ingestion-database-schema.md` for the schema and current source list.
 
+The discovery layer (sub-project 2a) is committed but **not yet deployed** — `.github/workflows/discovery-ingestion.yml` and migration `0003_create_candidate_topics_table.sql` have not been applied to production, unlike the RSS ingestion pipeline above. See `docs/superpowers/specs/2026-08-21-discovery-layer-database-schema.md` for status and known gaps.
+
 ## Known pending items
 
 - Feed URLs in `config/sources.config.ts` were verified live on 2026-08-20; re-check if ingestion starts silently returning 0 items for a source.
 - RLS is enabled on `articles` with no policies — intentionally deferred until a real anon-key consumer (e.g. a future dashboard) exists. See the database schema doc for details.
+- RLS is enabled on `candidate_topics` with no policies — same status as `articles`, see the discovery layer schema doc for details and other known limitations.

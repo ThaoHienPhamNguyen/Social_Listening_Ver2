@@ -62,10 +62,16 @@ export class SupabaseArticleRepository implements ArticleRepository {
 
   async getRecentTitles(days: number) {
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+    // Supabase-hosted PostgREST applies a project-level "Max rows" cap
+    // (commonly 1000 by default) that silently truncates unbounded reads.
+    // 5000 is a generous safety net, not a tuned value — this table's
+    // keyword-cardinality is already a known follow-up concern separately.
     const { data, error } = await this.client
       .from('articles')
       .select('title')
-      .gte('created_at', since);
+      .gte('created_at', since)
+      .order('created_at', { ascending: true })
+      .limit(5000);
     if (error) throw new Error(error.message);
     return (data ?? []).map((row) => row.title as string);
   }

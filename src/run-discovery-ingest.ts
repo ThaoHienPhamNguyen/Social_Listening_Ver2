@@ -5,6 +5,7 @@ import { SupabaseArticleRepository } from './lib/article-repository';
 import { GoogleTrendsSource } from './lib/google-trends-source';
 import { YouTubeTrendingSource } from './lib/youtube-source';
 import { RssTopicSource } from './lib/rss-topic-source';
+import type { DiscoverySource } from './lib/discovery-source';
 import { ingestAllDiscoverySources } from './discovery-ingest';
 
 async function main() {
@@ -12,11 +13,14 @@ async function main() {
   const repo = new SupabaseCandidateTopicRepository(client);
   const articleRepo = new SupabaseArticleRepository(client);
 
-  const sources = [
-    new GoogleTrendsSource(),
-    new YouTubeTrendingSource(getRequiredEnv('YOUTUBE_API_KEY')),
-    new RssTopicSource(articleRepo),
-  ];
+  const sources: DiscoverySource[] = [new GoogleTrendsSource(), new RssTopicSource(articleRepo)];
+
+  const youtubeApiKey = process.env.YOUTUBE_API_KEY;
+  if (youtubeApiKey) {
+    sources.push(new YouTubeTrendingSource(youtubeApiKey));
+  } else {
+    console.error('YOUTUBE_API_KEY not set — skipping YouTube source');
+  }
 
   const results = await ingestAllDiscoverySources(sources, { repo });
 
