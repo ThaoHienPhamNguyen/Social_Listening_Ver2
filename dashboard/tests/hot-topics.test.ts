@@ -109,10 +109,13 @@ describe('buildHotTopicsOverview', () => {
   });
 
   it('averages share of voice across a candidate\'s multiple categories', () => {
-    const multi = candidate({ id: 'multi', metric_value: 50, category_hint: ['tai_chinh', 'giai_tri'], is_shortlisted: true });
-    // alone in tai_chinh -> 100% share; alone in giai_tri -> 100% share; average = 100
-    const result = buildHotTopicsOverview([multi], ['tai_chinh', 'giai_tri', 'du_lich']);
-    expect(result.rss[0].shareOfVoice).toBe(100);
+    const multi = candidate({ id: 'multi', metric_value: 25, category_hint: ['tai_chinh', 'giai_tri'], is_shortlisted: true });
+    const otherInGiaiTri = candidate({ id: 'other', metric_value: 75, category_hint: ['giai_tri'], is_shortlisted: true });
+    // alone in tai_chinh -> 100% share; 25 / (25 + 75) in giai_tri -> 25% share;
+    // average = (100 + 25) / 2 = 62.5, which can't be confused with either raw value
+    const result = buildHotTopicsOverview([multi, otherInGiaiTri], ['tai_chinh', 'giai_tri', 'du_lich']);
+    const row = result.rss.find((r) => r.id === 'multi');
+    expect(row?.shareOfVoice).toBe(62.5);
   });
 
   it('returns null share of voice for a candidate with no category_hint', () => {

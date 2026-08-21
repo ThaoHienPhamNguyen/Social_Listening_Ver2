@@ -11,6 +11,16 @@ function formatPercent(value: number | null): string {
   return value === null ? '—' : `${value.toFixed(1)}%`;
 }
 
+// growth_rate = 999 is the ingestion pipeline's sentinel for "no prior-week
+// baseline" (see rank-and-select.ts). computeTrendingScore multiplies by
+// 100, so it shows up here as exactly 99900. Render it as "Mới" (new)
+// instead of a nonsense percentage.
+function formatTrendingScore(value: number | null): string {
+  if (value === null) return '—';
+  if (value === 99900) return 'Mới';
+  return `${value.toFixed(1)}%`;
+}
+
 export function HotTopicsSection({
   date,
   bySource,
@@ -43,7 +53,7 @@ export function HotTopicsSection({
                 <li key={row.id} className="text-sm flex justify-between gap-2">
                   <span>{row.keyword}</span>
                   <span className="text-gray-500 whitespace-nowrap">
-                    {formatPercent(row.trendingScore)} · {formatPercent(row.shareOfVoice)}
+                    {formatTrendingScore(row.trendingScore)} · {formatPercent(row.shareOfVoice)}
                   </span>
                 </li>
               ))}
