@@ -48,15 +48,28 @@ export async function ingestDiscoverySource(
 
   result.fetched = candidates.length;
 
-  const rows: Partial<CandidateTopic>[] = candidates.map((candidate) => ({
-    source: source.name,
-    keyword: candidate.keyword,
-    date,
-    metric_value: candidate.metric_value,
-    growth_rate: candidate.growth_rate,
-    category_hint: matchCategories(candidate.keyword),
-    is_shortlisted: false,
-  }));
+  // The workflow runs discovery-ingest -> rank-and-select up to 3x/day, all
+  // writing the same `date`. A keyword that reappears in a later run's fetch
+  // must not lose what an earlier run's rank-and-select already computed for
+  // it that day. Supabase/PostgREST's upsert only touches the columns present
+  // in the payload on conflict (leaves the rest of the row alone) — so
+  // `growth_rate` is included only when the source supplies one directly
+  // (e.g. Google Trends, which is fresh every fetch and safe to overwrite),
+  // and `is_shortlisted` is never included here at all, since only
+  // rank-and-select is allowed to set it.
+  const rows: Partial<CandidateTopic>[] = candidates.map((candidate) => {
+    const row: Partial<CandidateTopic> = {
+      source: source.name,
+      keyword: candidate.keyword,
+      date,
+      metric_value: candidate.metric_value,
+      category_hint: matchCategories(candidate.keyword),
+    };
+    if (candidate.growth_rate !== null) {
+      row.growth_rate = candidate.growth_rate;
+    }
+    return row;
+  });
 
   for (const batch of chunk(rows, UPSERT_CHUNK_SIZE)) {
     const { error, count } = await deps.repo.upsertCandidates(batch);

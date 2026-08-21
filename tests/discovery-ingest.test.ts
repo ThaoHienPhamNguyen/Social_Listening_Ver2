@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { ingestDiscoverySource, ingestAllDiscoverySources } from '../src/discovery-ingest';
+import { rankAndSelect } from '../src/rank-and-select';
 import { FakeCandidateTopicRepository } from './fakes/fake-candidate-topic-repository';
 import type { DiscoverySource } from '../src/lib/discovery-source';
 
@@ -87,6 +88,30 @@ describe('ingestDiscoverySource', () => {
     expect(result.upserted).toBe(0);
     expect(result.errors).toHaveLength(1);
     expect(result.errors[0]).toContain('db unavailable');
+  });
+
+  it('does not reset an already-computed growth_rate/is_shortlisted when the same keyword is re-ingested later the same day', async () => {
+    // The workflow runs discovery-ingest -> rank-and-select 3x/day, all writing
+    // the same calendar `date`. A keyword that reappears in a later run's fetch
+    // must not lose what an earlier run's rank-and-select already computed for it.
+    const repo = new FakeCandidateTopicRepository();
+    const now = () => new Date('2026-08-21T09:00:00Z');
+    const source = fakeSource('rss', [{ keyword: 'bitcoin', metric_value: 10, growth_rate: null }]);
+
+    // Run 1: ingest, then rank-and-select computes growth_rate and shortlists it.
+    await ingestDiscoverySource(source, { repo, now });
+    await rankAndSelect({ repo, now });
+
+    const afterRun1 = repo.candidates.find((c) => c.keyword === 'bitcoin')!;
+    expect(afterRun1.growth_rate).toBe(999); // sentinel: no prior history
+    expect(afterRun1.is_shortlisted).toBe(true);
+
+    // Run 2 (later that day): the same keyword reappears in the RSS fetch.
+    await ingestDiscoverySource(source, { repo, now });
+
+    const afterRun2 = repo.candidates.find((c) => c.keyword === 'bitcoin')!;
+    expect(afterRun2.growth_rate).toBe(999);
+    expect(afterRun2.is_shortlisted).toBe(true);
   });
 });
 
