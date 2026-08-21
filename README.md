@@ -6,7 +6,7 @@ RSS ingestion sub-project. See `docs/superpowers/specs/2026-08-20-rss-ingestion-
 
 1. `npm install`
 2. Create a Supabase project (not automated — user-owned step).
-3. Apply `supabase/migrations/0001_create_articles_table.sql` to that project.
+3. Apply `supabase/migrations/0001_create_articles_table.sql` and `0002_add_updated_at_trigger.sql`, in order, to that project (via the SQL Editor).
 4. In the GitHub repo settings, add secrets `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` (the service-role key, since writes happen server-side in Actions).
 
 ## Running locally
@@ -31,4 +31,5 @@ Live in production since 2026-08-20 — GitHub Actions (`.github/workflows/rss-i
 ## Known pending items
 
 - Feed URLs in `config/sources.config.ts` were verified live on 2026-08-20; re-check if ingestion starts silently returning 0 items for a source.
-- Known gaps not yet fixed: `full_content` stores raw HTML (not stripped), repository write errors are silently discarded, no fetch timeouts, RLS enabled with no policies yet. See the database schema doc for details.
+- **⚠️ Migration `0002_add_updated_at_trigger.sql` has not been applied to the live Supabase project yet** — needs a manual SQL Editor run.
+- RLS is enabled on `articles` with no policies — intentionally deferred until a real anon-key consumer (e.g. a future dashboard) exists. See the database schema doc for details.

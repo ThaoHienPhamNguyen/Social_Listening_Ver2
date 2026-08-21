@@ -37,16 +37,18 @@ erDiagram
 | `source_id` | `text` | `not null` | **không phải FK trong DB** — trỏ tới `id` trong `config/sources.config.ts` (26 feed). Cố tình không dùng bảng nguồn riêng, giữ đúng nguyên tắc "category/source source-of-truth nằm trong repo, không phải DB" |
 | `categories` | `text[]` | `not null default '{}'` | multi-category; tính 2 lần — lúc ingest (từ title+snippet) và tính lại lúc crawl xong (từ `full_content`, **union** với giá trị cũ, không bao giờ mất category — xem commit `e740cef`) |
 | `snippet` | `text` | `not null default ''` | mô tả ngắn lấy thẳng từ RSS |
-| `full_content` | `text` | nullable | do job `crawl-content` điền; **hiện đang là HTML thô** chưa strip tag (known gap) |
+| `full_content` | `text` | nullable | do job `crawl-content` điền; **text sạch** (strip HTML qua `sanitize-html`) kể từ commit `5d1ff5e` — bài crawl trước đó vẫn còn HTML thô, chưa backfill (quyết định có chủ đích) |
 | `content_fetch_status` | `text` | `not null default 'pending'`, `check in ('pending','done','failed')` | cơ chế handoff duy nhất giữa 2 job `ingest-rss` → `crawl-content`, không dùng queue service riêng |
 | `fetch_attempts` | `integer` | `not null default 0` | tăng mỗi lần crawl thử; đạt `MAX_FETCH_ATTEMPTS = 3` thì `content_fetch_status` khoá vĩnh viễn ở `failed`, không retry vô hạn |
 | `created_at` | `timestamptz` | `not null default now()` | |
-| `updated_at` | `timestamptz` | `not null default now()` | **không có trigger** — cột này hiện không bao giờ được cập nhật sau lần insert đầu (known gap) |
+| `updated_at` | `timestamptz` | `not null default now()` | tự cập nhật qua trigger `articles_set_updated_at` (migration `0002_add_updated_at_trigger.sql`) |
 
 ## Index
 
 - `articles_content_fetch_status_idx` — btree trên `content_fetch_status`, phục vụ query `getPendingArticles` (lọc `= 'pending'`) chạy mỗi lần job `crawl-content` khởi động.
 - `articles_categories_idx` — GIN trên `categories`, phục vụ query lọc theo category (dashboard tương lai — `overall` = không lọc, 3 category còn lại = `categories @> ARRAY['tai_chinh']` kiểu tương tự).
+
+`getPendingArticles` sắp theo `created_at` tăng dần (bài cũ nhất xử lý trước — FIFO), tránh bỏ đói bài cũ khi backlog lớn hơn giới hạn mỗi lần chạy.
 
 ## Row Level Security
 
@@ -81,8 +83,15 @@ erDiagram
 - **Báo Đầu tư** (baodautu.vn) — URL feed tồn tại và là XML hợp lệ nhưng trả về 0 bài (feed chết).
 - **Thời báo Tài chính VN** — HTTP 410 Gone, đã ngừng RSS.
 
-## Known gaps liên quan tới schema này (chưa xử lý, xem [[project_rss_ingestion_subproject]])
+## Known gaps liên quan tới schema này
 
-- `updated_at` không có trigger tự cập nhật.
-- `full_content` lưu HTML thô, tên cột gây hiểu nhầm là plain text.
-- Lỗi ghi (`markDone`/`markRetryOrFailed`) bị nuốt thầm ở tầng `SupabaseArticleRepository` — không liên quan schema nhưng ảnh hưởng trực tiếp độ tin cậy dữ liệu trong bảng này.
+**Đã fix (2026-08-20, commit `5d1ff5e`):**
+- `updated_at` giờ có trigger tự cập nhật.
+- `full_content` lưu text sạch (không còn HTML thô) — chỉ áp dụng bài crawl từ giờ trở đi.
+- Lỗi ghi (`markDone`/`markRetryOrFailed`) không còn bị nuốt thầm — trả về `{error}`, được log và tính là failed; `getPendingArticles` throw khi query lỗi thay vì trả `[]` (tránh báo nhầm "không có gì pending" khi DB outage).
+- Thêm timeout 15s cho mọi network fetch (RSS parse + content extract).
+- `getPendingArticles` giờ sắp theo `created_at` tăng dần, tránh bỏ đói bài cũ.
+- Feed URL không phải `http(s)://` bị skip ngay từ bước ingest.
+
+**Cố ý chưa xử lý:**
+- RLS bật nhưng chưa có policy — quyết định giữ nguyên (chưa có consumer dùng anon key), xem mục Row Level Security ở trên.
