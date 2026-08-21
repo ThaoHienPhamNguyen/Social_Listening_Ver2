@@ -31,5 +31,4 @@ Live in production since 2026-08-20 — GitHub Actions (`.github/workflows/rss-i
 ## Known pending items
 
 - Feed URLs in `config/sources.config.ts` were verified live on 2026-08-20; re-check if ingestion starts silently returning 0 items for a source.
-- **⚠️ Migration `0002_add_updated_at_trigger.sql` has not been applied to the live Supabase project yet** — needs a manual SQL Editor run.
 - RLS is enabled on `articles` with no policies — intentionally deferred until a real anon-key consumer (e.g. a future dashboard) exists. See the database schema doc for details.
