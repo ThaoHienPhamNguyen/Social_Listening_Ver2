@@ -57,7 +57,19 @@ export async function ingestDiscoverySource(
   // (e.g. Google Trends, which is fresh every fetch and safe to overwrite),
   // and `is_shortlisted` is never included here at all, since only
   // rank-and-select is allowed to set it.
-  const rows: Partial<CandidateTopic>[] = candidates.map((candidate) => {
+  //
+  // PostgREST derives one column list from the UNION of keys across every
+  // row in a single bulk upsert call — a row that omits `growth_rate` in a
+  // batch that also contains rows supplying it would get NULL written
+  // instead of being left untouched, silently reproducing the bug this
+  // omission is meant to prevent. So rows are split by growth_rate presence
+  // *before* chunking, keeping every single upsertCandidates() call
+  // homogeneous, regardless of whether a given source's fetch ever mixes
+  // null and non-null growth_rate (none of the three built-in sources do
+  // today, but nothing enforces that they never will).
+  const rowsWithGrowthRate: Partial<CandidateTopic>[] = [];
+  const rowsWithoutGrowthRate: Partial<CandidateTopic>[] = [];
+  for (const candidate of candidates) {
     const row: Partial<CandidateTopic> = {
       source: source.name,
       keyword: candidate.keyword,
@@ -66,12 +78,15 @@ export async function ingestDiscoverySource(
       category_hint: matchCategories(candidate.keyword),
     };
     if (candidate.growth_rate !== null) {
-      row.growth_rate = candidate.growth_rate;
+      rowsWithGrowthRate.push({ ...row, growth_rate: candidate.growth_rate });
+    } else {
+      rowsWithoutGrowthRate.push(row);
     }
-    return row;
-  });
+  }
 
-  for (const batch of chunk(rows, UPSERT_CHUNK_SIZE)) {
+  const batches = [...chunk(rowsWithGrowthRate, UPSERT_CHUNK_SIZE), ...chunk(rowsWithoutGrowthRate, UPSERT_CHUNK_SIZE)];
+
+  for (const batch of batches) {
     const { error, count } = await deps.repo.upsertCandidates(batch);
     if (error) {
       result.errors.push(`batch upsert failed for ${batch.length} candidate(s): ${error}`);

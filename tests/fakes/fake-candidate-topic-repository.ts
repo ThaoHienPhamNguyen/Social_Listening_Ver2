@@ -9,6 +9,10 @@ export class FakeCandidateTopicRepository implements CandidateTopicRepository {
   // Records the size of each upsertCandidates call, so tests can verify
   // callers actually chunk large batches instead of sending one giant call.
   public upsertCandidatesCallSizes: number[] = [];
+  // Records the actual payload of each upsertCandidates call, so tests can
+  // inspect which keys each row carries (e.g. to verify batches stay
+  // homogeneous with respect to optional fields like growth_rate).
+  public upsertCandidatesCallPayloads: Partial<CandidateTopic>[][] = [];
 
   async upsertCandidate(candidate: Partial<CandidateTopic>) {
     const existing = this.candidates.find(
@@ -30,6 +34,7 @@ export class FakeCandidateTopicRepository implements CandidateTopicRepository {
 
   async upsertCandidates(candidates: Partial<CandidateTopic>[]) {
     this.upsertCandidatesCallSizes.push(candidates.length);
+    this.upsertCandidatesCallPayloads.push(candidates);
     if (this.upsertCandidatesError) {
       return { error: this.upsertCandidatesError, count: 0 };
     }

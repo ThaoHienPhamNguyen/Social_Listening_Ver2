@@ -113,6 +113,27 @@ describe('ingestDiscoverySource', () => {
     expect(afterRun2.growth_rate).toBe(999);
     expect(afterRun2.is_shortlisted).toBe(true);
   });
+
+  it('keeps growth_rate presence homogeneous within each batch write, even if a source returns a mix of null and non-null growth_rate', async () => {
+    // Supabase/PostgREST's bulk upsert derives one column list from the union
+    // of keys across ALL rows in a single array — a row that omits a key
+    // present elsewhere in the same batch gets NULL written for it, not left
+    // untouched. So every upsertCandidates() call must be homogeneous with
+    // respect to which optional keys (growth_rate) it carries, regardless of
+    // what any given source's fetchCandidates() returns.
+    const repo = new FakeCandidateTopicRepository();
+    const source = fakeSource('google_trends', [
+      { keyword: 'a', metric_value: 1, growth_rate: 2.5 },
+      { keyword: 'b', metric_value: 2, growth_rate: null },
+    ]);
+
+    await ingestDiscoverySource(source, { repo, now: () => new Date('2026-08-21T09:00:00Z') });
+
+    for (const batch of repo.upsertCandidatesCallPayloads) {
+      const hasGrowthRateFlags = new Set(batch.map((row) => 'growth_rate' in row));
+      expect(hasGrowthRateFlags.size).toBe(1);
+    }
+  });
 });
 
 describe('ingestAllDiscoverySources', () => {
