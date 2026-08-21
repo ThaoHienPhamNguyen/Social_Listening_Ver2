@@ -31,3 +31,24 @@ export interface FeedItem {
   content?: string;
   isoDate?: string;
 }
+
+export type DiscoverySourceName = 'google_trends' | 'youtube' | 'rss';
+
+export interface RawCandidate {
+  keyword: string;
+  metric_value: number;
+  growth_rate: number | null;
+}
+
+export interface CandidateTopic {
+  id?: string;
+  source: DiscoverySourceName;
+  keyword: string;
+  date: string;
+  metric_value: number;
+  growth_rate: number | null;
+  category_hint: string[];
+  is_shortlisted: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
