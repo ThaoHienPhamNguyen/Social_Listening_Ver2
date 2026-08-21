@@ -2,6 +2,12 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { CandidateTopic } from '../types';
 
 export interface CandidateTopicRepository {
+  // No production caller uses this (discovery-ingest.ts calls upsertCandidates
+  // below) — kept for FakeCandidateTopicRepository's internal use and its own
+  // test. Unlike upsertCandidates, nothing here omits growth_rate/is_shortlisted
+  // from the payload, so a future caller that upserts a single row this way
+  // would reintroduce the same-day overwrite bug discovery-ingest.ts's row
+  // construction was specifically built to avoid — prefer upsertCandidates.
   upsertCandidate(candidate: Partial<CandidateTopic>): Promise<{ error: string | null }>;
   upsertCandidates(candidates: Partial<CandidateTopic>[]): Promise<{ error: string | null; count: number }>;
   getTodayCandidates(date: string): Promise<CandidateTopic[]>;

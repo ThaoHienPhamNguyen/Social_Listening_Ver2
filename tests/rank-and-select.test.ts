@@ -42,9 +42,33 @@ describe('rankAndSelect', () => {
     expect(repo.candidates[0].growth_rate).toBe(2);
   });
 
+  it('recomputes growth_rate for non-Google-Trends sources every run, even if an earlier run that same day already set one', async () => {
+    // discovery-ingest.ts preserves growth_rate across same-day re-ingests (it's
+    // omitted from the upsert payload once set), and metric_value keeps updating
+    // on every re-ingest. If rank-and-select only recomputed growth_rate when it
+    // was still null, a later run's fresher metric_value would never be reflected
+    // — the shortlist would rank on a stale figure from earlier in the day.
+    const repo = new FakeCandidateTopicRepository();
+    repo.candidates.push(
+      // Stale growth_rate=0.5 from an earlier run today; metric_value has since
+      // risen to 400 via a later discovery-ingest run.
+      candidate({ id: '1', keyword: 'bitcoin', source: 'youtube', metric_value: 400, growth_rate: 0.5, date: '2026-08-21' }),
+      candidate({ id: '2', keyword: 'bitcoin', source: 'youtube', metric_value: 100, date: '2026-08-19' }),
+      candidate({ id: '3', keyword: 'bitcoin', source: 'youtube', metric_value: 100, date: '2026-08-20' })
+    );
+
+    await rankAndSelect({ repo, now: NOW });
+
+    // baseline avg = 100; fresh growth_rate = (400-100)/100 = 3, not the stale 0.5.
+    expect(repo.candidates[0].growth_rate).toBe(3);
+  });
+
   it('assigns the sentinel growth_rate to a keyword with no history at all', async () => {
     const repo = new FakeCandidateTopicRepository();
-    repo.candidates.push(candidate({ id: '1', keyword: 'topic mới', metric_value: 50 }));
+    // Non-Google-Trends source: growth_rate starts null and must be computed
+    // (Google Trends' own growth_rate, once set, is never touched — see the
+    // "keeps the growth_rate already provided by a source" test above).
+    repo.candidates.push(candidate({ id: '1', source: 'youtube', keyword: 'topic mới', metric_value: 50 }));
 
     await rankAndSelect({ repo, now: NOW });
 
@@ -54,8 +78,8 @@ describe('rankAndSelect', () => {
   it('assigns the sentinel growth_rate when the baseline average is zero', async () => {
     const repo = new FakeCandidateTopicRepository();
     repo.candidates.push(
-      candidate({ id: '1', keyword: 'y', metric_value: 10, date: '2026-08-21' }),
-      candidate({ id: '2', keyword: 'y', metric_value: 0, date: '2026-08-20' })
+      candidate({ id: '1', source: 'youtube', keyword: 'y', metric_value: 10, date: '2026-08-21' }),
+      candidate({ id: '2', source: 'youtube', keyword: 'y', metric_value: 0, date: '2026-08-20' })
     );
 
     await rankAndSelect({ repo, now: NOW });
@@ -68,7 +92,9 @@ describe('rankAndSelect', () => {
     repo.candidates.push(
       candidate({ id: '1', source: 'google_trends', keyword: 'a', growth_rate: 3 }),
       candidate({ id: '2', source: 'google_trends', keyword: 'b', growth_rate: 1 }),
-      candidate({ id: '3', source: 'youtube', keyword: 'a', growth_rate: 5 })
+      // The sole youtube candidate: growth_rate starts null (gets computed —
+      // sentinel 999, no history) and is trivially youtube's own top-1 either way.
+      candidate({ id: '3', source: 'youtube', keyword: 'a' })
     );
 
     const result = await rankAndSelect({ repo, now: NOW }, { topPerSource: 1 });
@@ -84,9 +110,15 @@ describe('rankAndSelect', () => {
     repo.candidates.push(
       // Source A: keyword 'c' is the only candidate, so it's trivially A's top-N.
       candidate({ id: '1', source: 'google_trends', keyword: 'c', growth_rate: 10 }),
-      // Source B: keyword 'c' is present but outranked by 'd', so 'c' does NOT make B's own top-N.
-      candidate({ id: '2', source: 'youtube', keyword: 'c', growth_rate: 1 }),
-      candidate({ id: '3', source: 'youtube', keyword: 'd', growth_rate: 5 })
+      // Source B: keyword 'c' and 'd' both have baseline history (below), so their
+      // growth_rate gets computed (youtube is never skipped) to 1 and 5
+      // respectively — 'c' is outranked by 'd' and does NOT make B's own top-N.
+      candidate({ id: '2', source: 'youtube', keyword: 'c', metric_value: 100, date: '2026-08-21' }),
+      candidate({ id: '3', source: 'youtube', keyword: 'd', metric_value: 300, date: '2026-08-21' }),
+      // Baseline history (outside today, picked up by getRecentMetrics only):
+      // 'c': (100-50)/50 = 1. 'd': (300-50)/50 = 5.
+      candidate({ id: 'h1', source: 'youtube', keyword: 'c', metric_value: 50, date: '2026-08-20' }),
+      candidate({ id: 'h2', source: 'youtube', keyword: 'd', metric_value: 50, date: '2026-08-20' })
     );
 
     const result = await rankAndSelect({ repo, now: NOW }, { topPerSource: 1 });

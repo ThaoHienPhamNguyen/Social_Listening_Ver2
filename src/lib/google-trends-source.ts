@@ -10,6 +10,33 @@ export function normalizeGrowthRate(percentGrowth: number): number {
   return percentGrowth / 100;
 }
 
+export interface GoogleTrendsItem {
+  keyword: string;
+  traffic: number;
+  trafficGrowthRate: number;
+}
+
+// Google's own trending list doesn't contain duplicates, but our own
+// lowercase/trim normalization (below) can still collapse two distinct
+// entries into the same keyword. A batch upsert with two rows sharing one
+// (source, keyword, date) key fails Postgres's ON CONFLICT clause for the
+// WHOLE batch — dedup here, keeping the higher-traffic (stronger-signal)
+// entry, before that can ever happen.
+export function toRawCandidates(items: GoogleTrendsItem[]): RawCandidate[] {
+  const byKeyword = new Map<string, RawCandidate>();
+  for (const item of items) {
+    const keyword = item.keyword.toLowerCase().trim();
+    const existing = byKeyword.get(keyword);
+    if (existing && existing.metric_value >= item.traffic) continue;
+    byKeyword.set(keyword, {
+      keyword,
+      metric_value: item.traffic,
+      growth_rate: normalizeGrowthRate(item.trafficGrowthRate),
+    });
+  }
+  return Array.from(byKeyword.values());
+}
+
 export class GoogleTrendsSource implements DiscoverySource {
   name = 'google_trends' as const;
 
@@ -22,11 +49,6 @@ export class GoogleTrendsSource implements DiscoverySource {
     if (error) {
       throw new Error(`GoogleTrendsApi.dailyTrends failed: ${error.message}`);
     }
-    const items = data ?? [];
-    return items.map((item) => ({
-      keyword: item.keyword.toLowerCase().trim(),
-      metric_value: item.traffic,
-      growth_rate: normalizeGrowthRate(item.trafficGrowthRate),
-    }));
+    return toRawCandidates(data ?? []);
   }
 }

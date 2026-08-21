@@ -32,6 +32,8 @@ Setup: apply `supabase/migrations/0003_create_candidate_topics_table.sql` (after
 
 Sources: Google Trends (`@alkalisummer/google-trends-js`, unofficial but verified working for `geo=VN`), YouTube Data API (official), and the existing `articles` table (keyword frequency in recent titles). Reddit and TikTok Creative Center are deliberately out of scope — see `docs/superpowers/specs/2026-08-21-discovery-layer-design.md` §7 for why.
 
+Schedule: `discovery-ingestion.yml` runs 1 hour after `rss-ingestion.yml` (09:00/12:00/21:00 ICT vs. 08:00/11:00/20:00 ICT) so it never reads the `articles` table while `ingest-rss` is mid-write and doesn't contend with it for GitHub Actions runners — see the schedule comment in the workflow file.
+
 This produces a `candidate_topics` shortlist for the future Apify deep-crawl layer (sub-project 2b, not yet built) to consume — this sub-project does not call Apify.
 
 ## Tests

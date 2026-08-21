@@ -30,7 +30,16 @@ export async function rankAndSelect(deps: RankDeps, options: RankOptions = {}): 
   const candidates = await deps.repo.getTodayCandidates(today);
 
   for (const candidate of candidates) {
-    if (candidate.growth_rate !== null) continue;
+    // Only Google Trends supplies growth_rate at the source level — that value
+    // must never be touched. YouTube/RSS always fetch with growth_rate: null,
+    // but discovery-ingest.ts preserves whatever rank-and-select last computed
+    // across same-day re-ingests (so is_shortlisted doesn't get reset either),
+    // which means a non-null growth_rate here could be a source-supplied value
+    // OR a stale figure from an earlier run today, computed against a
+    // metric_value that later re-ingests have since moved past. Recomputing
+    // every run for non-Google-Trends candidates keeps the baseline-derived
+    // growth_rate as fresh as metric_value always is.
+    if (candidate.source === 'google_trends') continue;
 
     const recent = await deps.repo.getRecentMetrics(candidate.source, candidate.keyword, since, today);
 
