@@ -11,9 +11,11 @@ export interface PendingArticle {
 
 export interface ArticleRepository {
   upsertArticle(article: Partial<Article>): Promise<{ error: string | null }>;
+  /** Throws if the underlying query fails — a caller should not treat a
+   *  thrown error the same as "nothing pending". */
   getPendingArticles(limit: number, maxAttempts: number): Promise<PendingArticle[]>;
-  markDone(id: string, fullContent: string, attempts: number, categories: string[]): Promise<void>;
-  markRetryOrFailed(id: string, attempts: number, maxAttempts: number): Promise<void>;
+  markDone(id: string, fullContent: string, attempts: number, categories: string[]): Promise<{ error: string | null }>;
+  markRetryOrFailed(id: string, attempts: number, maxAttempts: number): Promise<{ error: string | null }>;
 }
 
 export class SupabaseArticleRepository implements ArticleRepository {
@@ -32,25 +34,28 @@ export class SupabaseArticleRepository implements ArticleRepository {
       .select('id, url, fetch_attempts, source_id, categories')
       .eq('content_fetch_status', 'pending')
       .lt('fetch_attempts', maxAttempts)
+      .order('created_at', { ascending: true })
       .limit(limit);
-    if (error || !data) return [];
-    return data as PendingArticle[];
+    if (error) throw new Error(error.message);
+    return (data ?? []) as PendingArticle[];
   }
 
   async markDone(id: string, fullContent: string, attempts: number, categories: string[]) {
-    await this.client
+    const { error } = await this.client
       .from('articles')
       .update({ full_content: fullContent, content_fetch_status: 'done', fetch_attempts: attempts, categories })
       .eq('id', id);
+    return { error: error?.message ?? null };
   }
 
   async markRetryOrFailed(id: string, attempts: number, maxAttempts: number) {
-    await this.client
+    const { error } = await this.client
       .from('articles')
       .update({
         content_fetch_status: attempts >= maxAttempts ? 'failed' : 'pending',
         fetch_attempts: attempts,
       })
       .eq('id', id);
+    return { error: error?.message ?? null };
   }
 }

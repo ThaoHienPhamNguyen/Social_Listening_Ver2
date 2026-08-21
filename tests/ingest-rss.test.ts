@@ -50,6 +50,21 @@ describe('ingestSource', () => {
     expect(repo.articles).toHaveLength(0);
   });
 
+  it('skips items whose link is not an http(s) URL', async () => {
+    const repo = new FakeArticleRepository();
+    const fetcher = fakeFetcher([
+      { link: 'javascript:alert(1)', title: 'Link độc hại' },
+      { link: 'ftp://example.com/x', title: 'Không phải http(s)' },
+      { link: 'https://example.com/good', title: 'Link hợp lệ' },
+    ]);
+
+    const result = await ingestSource(source, { fetcher, repo });
+
+    expect(result.upserted).toBe(1);
+    expect(repo.articles).toHaveLength(1);
+    expect(repo.articles[0].url).toBe('https://example.com/good');
+  });
+
   it('records an error and returns early when the feed fetch throws', async () => {
     const repo = new FakeArticleRepository();
     const fetcher: FeedFetcher = {

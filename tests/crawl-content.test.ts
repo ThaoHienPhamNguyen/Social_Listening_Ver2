@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { crawlPendingArticles, MAX_FETCH_ATTEMPTS } from '../src/crawl-content';
 import { FakeArticleRepository } from './fakes/fake-article-repository';
 import type { ContentExtractor } from '../src/lib/article-extractor';
@@ -37,12 +37,15 @@ describe('crawlPendingArticles', () => {
     const repo = new FakeArticleRepository();
     repo.articles.push(baseArticle({ id: '1', fetch_attempts: 0 }));
     const extractor: ContentExtractor = { extract: async () => null };
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     const result = await crawlPendingArticles({ repo, extractor });
 
     expect(result).toEqual({ processed: 1, succeeded: 0, failed: 1 });
     expect(repo.articles[0].content_fetch_status).toBe('pending');
     expect(repo.articles[0].fetch_attempts).toBe(1);
+
+    errorSpy.mockRestore();
   });
 
   it('marks failed permanently once attempts reach MAX_FETCH_ATTEMPTS', async () => {
@@ -53,11 +56,14 @@ describe('crawlPendingArticles', () => {
         throw new Error('timeout');
       },
     };
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     await crawlPendingArticles({ repo, extractor });
 
     expect(repo.articles[0].content_fetch_status).toBe('failed');
     expect(repo.articles[0].fetch_attempts).toBe(MAX_FETCH_ATTEMPTS);
+
+    errorSpy.mockRestore();
   });
 
   it('respects the limit parameter', async () => {
@@ -118,5 +124,30 @@ describe('crawlPendingArticles', () => {
 
     expect(result).toEqual({ processed: 1, succeeded: 1, failed: 0 });
     expect(repo.articles[0].categories).toEqual(['tai_chinh']);
+  });
+
+  it('propagates the error when getPendingArticles fails, instead of treating it as nothing pending', async () => {
+    const repo = new FakeArticleRepository();
+    repo.getPendingArticlesError = 'connection refused';
+    const extractor: ContentExtractor = { extract: async () => ({ text: 'x' }) };
+
+    await expect(crawlPendingArticles({ repo, extractor })).rejects.toThrow('connection refused');
+  });
+
+  it('retries instead of succeeding when the write itself fails after a successful extraction', async () => {
+    const repo = new FakeArticleRepository();
+    repo.articles.push(baseArticle({ id: '1', fetch_attempts: 0 }));
+    repo.markDoneError = 'connection reset';
+    const extractor: ContentExtractor = { extract: async () => ({ text: 'nội dung' }) };
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const result = await crawlPendingArticles({ repo, extractor });
+
+    expect(result).toEqual({ processed: 1, succeeded: 0, failed: 1 });
+    expect(repo.articles[0].content_fetch_status).toBe('pending');
+    expect(repo.articles[0].fetch_attempts).toBe(1);
+    expect(errorSpy).toHaveBeenCalled();
+
+    errorSpy.mockRestore();
   });
 });

@@ -67,4 +67,44 @@ describe('FakeArticleRepository', () => {
     await repo.markRetryOrFailed('1', 3, 3);
     expect(repo.articles[0].content_fetch_status).toBe('failed');
   });
+
+  it('getPendingArticles orders results by created_at ascending (oldest first)', async () => {
+    const repo = new FakeArticleRepository();
+    repo.articles.push(
+      { id: '1', url: 'u1', title: 't', published_at: '', source_id: 's', categories: [], snippet: '', full_content: null, content_fetch_status: 'pending', fetch_attempts: 0, created_at: '2026-08-20T10:00:00Z' },
+      { id: '2', url: 'u2', title: 't', published_at: '', source_id: 's', categories: [], snippet: '', full_content: null, content_fetch_status: 'pending', fetch_attempts: 0, created_at: '2026-08-18T10:00:00Z' },
+      { id: '3', url: 'u3', title: 't', published_at: '', source_id: 's', categories: [], snippet: '', full_content: null, content_fetch_status: 'pending', fetch_attempts: 0, created_at: '2026-08-19T10:00:00Z' }
+    );
+    const pending = await repo.getPendingArticles(10, 3);
+    expect(pending.map((p) => p.id)).toEqual(['2', '3', '1']);
+  });
+
+  it('getPendingArticles throws when the injected error field is set', async () => {
+    const repo = new FakeArticleRepository();
+    repo.getPendingArticlesError = 'connection refused';
+    await expect(repo.getPendingArticles(10, 3)).rejects.toThrow('connection refused');
+  });
+
+  it('markDone returns the injected error and does not mutate the article', async () => {
+    const repo = new FakeArticleRepository();
+    repo.articles.push({ id: '1', url: 'u1', title: 't', published_at: '', source_id: 's', categories: [], snippet: '', full_content: null, content_fetch_status: 'pending', fetch_attempts: 0 });
+    repo.markDoneError = 'connection reset';
+
+    const { error } = await repo.markDone('1', 'full text', 1, ['tai_chinh']);
+
+    expect(error).toBe('connection reset');
+    expect(repo.articles[0].content_fetch_status).toBe('pending');
+    expect(repo.articles[0].full_content).toBeNull();
+  });
+
+  it('markRetryOrFailed returns the injected error and does not mutate the article', async () => {
+    const repo = new FakeArticleRepository();
+    repo.articles.push({ id: '1', url: 'u1', title: 't', published_at: '', source_id: 's', categories: [], snippet: '', full_content: null, content_fetch_status: 'pending', fetch_attempts: 1 });
+    repo.markRetryOrFailedError = 'connection reset';
+
+    const { error } = await repo.markRetryOrFailed('1', 2, 3);
+
+    expect(error).toBe('connection reset');
+    expect(repo.articles[0].fetch_attempts).toBe(1);
+  });
 });

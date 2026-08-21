@@ -39,10 +39,17 @@ export async function crawlPendingArticles(deps: CrawlDeps, limit = 200): Promis
         ? Array.from(new Set([...row.categories, ...categorize(source.defaultCategory, extracted.text)]))
         : row.categories;
 
-      await deps.repo.markDone(row.id, extracted.text, attempts, categories);
+      const { error } = await deps.repo.markDone(row.id, extracted.text, attempts, categories);
+      if (error) {
+        throw new Error(`write failed: ${error}`);
+      }
       result.succeeded += 1;
-    } catch {
-      await deps.repo.markRetryOrFailed(row.id, attempts, MAX_FETCH_ATTEMPTS);
+    } catch (err) {
+      console.error(`crawl failed for article ${row.id} (${row.url}): ${(err as Error).message}`);
+      const { error: retryError } = await deps.repo.markRetryOrFailed(row.id, attempts, MAX_FETCH_ATTEMPTS);
+      if (retryError) {
+        console.error(`markRetryOrFailed also failed for article ${row.id}: ${retryError}`);
+      }
       result.failed += 1;
     }
   }

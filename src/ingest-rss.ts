@@ -30,7 +30,7 @@ export async function ingestSource(source: RssSource, deps: IngestDeps): Promise
   result.fetched = items.length;
 
   for (const item of items) {
-    if (!item.link || !item.title) continue;
+    if (!item.link || !item.title || !/^https?:\/\//i.test(item.link)) continue;
 
     const snippet = item.contentSnippet ?? item.content ?? '';
     const categories = categorize(source.defaultCategory, `${item.title} ${snippet}`);
