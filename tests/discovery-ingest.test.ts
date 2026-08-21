@@ -3,6 +3,7 @@ import { ingestDiscoverySource, ingestAllDiscoverySources } from '../src/discove
 import { rankAndSelect } from '../src/rank-and-select';
 import { FakeCandidateTopicRepository } from './fakes/fake-candidate-topic-repository';
 import type { DiscoverySource } from '../src/lib/discovery-source';
+import type { CandidateTopicRepository } from '../src/lib/candidate-topic-repository';
 
 function fakeSource(
   name: 'google_trends' | 'youtube' | 'rss',
@@ -151,5 +152,38 @@ describe('ingestAllDiscoverySources', () => {
 
     expect(results).toHaveLength(2);
     expect(results.map((r) => r.source)).toEqual(['google_trends', 'youtube']);
+  });
+
+  it('records an error and still processes the remaining sources when a batch write throws instead of resolving with an error', async () => {
+    // Unlike a PostgREST-level failure (which resolves { error }), a network
+    // exception from the underlying fetch call can reject the promise —
+    // ingestDiscoverySource must isolate that the same way it isolates a
+    // fetchCandidates() failure, or one source's network blip aborts every
+    // source queued after it for the day.
+    const throwingRepo: CandidateTopicRepository = {
+      upsertCandidate: async () => ({ error: null }),
+      upsertCandidates: async () => {
+        throw new Error('network exception');
+      },
+      getTodayCandidates: async () => [],
+      getRecentMetrics: async () => [],
+      updateGrowthRate: async () => ({ error: null }),
+      markShortlisted: async () => ({ error: null }),
+    };
+    const sources = [
+      fakeSource('google_trends', [{ keyword: 'a', metric_value: 1, growth_rate: 1 }]),
+      fakeSource('youtube', [{ keyword: 'b', metric_value: 2, growth_rate: null }]),
+    ];
+
+    const results = await ingestAllDiscoverySources(sources, {
+      repo: throwingRepo,
+      now: () => new Date('2026-08-21T09:00:00Z'),
+    });
+
+    expect(results).toHaveLength(2);
+    expect(results[0].upserted).toBe(0);
+    expect(results[0].errors[0]).toContain('network exception');
+    expect(results[1].upserted).toBe(0);
+    expect(results[1].errors[0]).toContain('network exception');
   });
 });

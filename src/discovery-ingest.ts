@@ -87,11 +87,19 @@ export async function ingestDiscoverySource(
   const batches = [...chunk(rowsWithGrowthRate, UPSERT_CHUNK_SIZE), ...chunk(rowsWithoutGrowthRate, UPSERT_CHUNK_SIZE)];
 
   for (const batch of batches) {
-    const { error, count } = await deps.repo.upsertCandidates(batch);
-    if (error) {
-      result.errors.push(`batch upsert failed for ${batch.length} candidate(s): ${error}`);
-    } else {
-      result.upserted += count;
+    try {
+      const { error, count } = await deps.repo.upsertCandidates(batch);
+      if (error) {
+        result.errors.push(`batch upsert failed for ${batch.length} candidate(s): ${error}`);
+      } else {
+        result.upserted += count;
+      }
+    } catch (err) {
+      // A network-level exception (unlike a PostgREST-level {error} result)
+      // would otherwise propagate out of ingestAllDiscoverySources' loop and
+      // abort every source queued after this one for the day — isolate it
+      // the same way the fetchCandidates() failure above is isolated.
+      result.errors.push(`batch upsert threw for ${batch.length} candidate(s): ${(err as Error).message}`);
     }
   }
 
