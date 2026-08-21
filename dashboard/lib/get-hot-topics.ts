@@ -9,11 +9,9 @@ export interface HotTopicsResult {
   bySource: Record<CandidateTopic['source'], HotTopicRow[]>;
 }
 
-const EMPTY_BY_SOURCE: Record<CandidateTopic['source'], HotTopicRow[]> = {
-  google_trends: [],
-  youtube: [],
-  rss: [],
-};
+function emptyBySource(): Record<CandidateTopic['source'], HotTopicRow[]> {
+  return { google_trends: [], youtube: [], rss: [] };
+}
 
 export async function getHotTopics(
   reader: CandidateTopicsReader,
@@ -21,7 +19,7 @@ export async function getHotTopics(
 ): Promise<HotTopicsResult> {
   const date = await reader.getLatestDate();
   if (date === null) {
-    return { date: null, bySource: EMPTY_BY_SOURCE };
+    return { date: null, bySource: emptyBySource() };
   }
   const allCandidates = await reader.getCandidatesForDate(date);
   const bySource = category
