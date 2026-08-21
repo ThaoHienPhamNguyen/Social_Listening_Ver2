@@ -78,4 +78,24 @@ describe('rankAndSelect', () => {
     expect(repo.candidates.find((c) => c.id === '2')!.is_shortlisted).toBe(false);
     expect(repo.candidates.find((c) => c.id === '3')!.is_shortlisted).toBe(true);
   });
+
+  it('marks a row shortlisted via a keyword that is top-N in a different source, even when it is not top-N in its own source', async () => {
+    const repo = new FakeCandidateTopicRepository();
+    repo.candidates.push(
+      // Source A: keyword 'c' is the only candidate, so it's trivially A's top-N.
+      candidate({ id: '1', source: 'google_trends', keyword: 'c', growth_rate: 10 }),
+      // Source B: keyword 'c' is present but outranked by 'd', so 'c' does NOT make B's own top-N.
+      candidate({ id: '2', source: 'youtube', keyword: 'c', growth_rate: 1 }),
+      candidate({ id: '3', source: 'youtube', keyword: 'd', growth_rate: 5 })
+    );
+
+    const result = await rankAndSelect({ repo, now: NOW }, { topPerSource: 1 });
+
+    expect(result).toEqual({ evaluated: 3, shortlisted: 2 });
+    // 'c' is shortlisted because source A confirmed it, so B's 'c' row must also be marked,
+    // despite not ranking in B's own top-N slice.
+    expect(repo.candidates.find((c) => c.id === '2')!.is_shortlisted).toBe(true);
+    expect(repo.candidates.find((c) => c.id === '1')!.is_shortlisted).toBe(true);
+    expect(repo.candidates.find((c) => c.id === '3')!.is_shortlisted).toBe(true);
+  });
 });
