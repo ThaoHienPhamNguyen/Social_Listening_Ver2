@@ -16,4 +16,8 @@ export const sources: RssSource[] = [
   { id: 'tuoitre-tai-chinh', name: 'Tuổi Trẻ - Kinh doanh', url: 'https://tuoitre.vn/rss/kinh-doanh.rss', defaultCategory: 'tai_chinh' },
   { id: 'tuoitre-giai-tri', name: 'Tuổi Trẻ - Giải trí', url: 'https://tuoitre.vn/rss/giai-tri.rss', defaultCategory: 'giai_tri' },
   { id: 'tuoitre-du-lich', name: 'Tuổi Trẻ - Du lịch', url: 'https://tuoitre.vn/rss/du-lich.rss', defaultCategory: 'du_lich' },
+
+  { id: 'vietnamnet-tai-chinh', name: 'VietNamNet - Kinh doanh', url: 'https://vietnamnet.vn/rss/kinh-doanh.rss', defaultCategory: 'tai_chinh' },
+  { id: 'vietnamnet-giai-tri', name: 'VietNamNet - Giải trí', url: 'https://vietnamnet.vn/rss/giai-tri.rss', defaultCategory: 'giai_tri' },
+  { id: 'vietnamnet-du-lich', name: 'VietNamNet - Du lịch', url: 'https://vietnamnet.vn/rss/du-lich.rss', defaultCategory: 'du_lich' },
 ];
