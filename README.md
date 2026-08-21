@@ -14,7 +14,7 @@ RSS ingestion sub-project. See `docs/superpowers/specs/2026-08-20-rss-ingestion-
 ```bash
 export SUPABASE_URL=...
 export SUPABASE_SERVICE_KEY=...
-npm run ingest   # parses all 15 feeds, upserts pending articles
+npm run ingest   # parses all 26 feeds, upserts pending articles
 npm run crawl    # fetches full content for pending articles
 ```
 
