@@ -10,7 +10,9 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "ingest": "tsx src/run-ingest.ts",
-    "crawl": "tsx src/run-crawl.ts"
+    "crawl": "tsx src/run-crawl.ts",
+    "discover": "tsx src/run-discovery-ingest.ts",
+    "rank": "tsx src/run-rank-and-select.ts"
   },
   "dependencies": {
     "@alkalisummer/google-trends-js": "^0.3.7",

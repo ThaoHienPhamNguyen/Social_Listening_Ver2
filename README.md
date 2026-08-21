@@ -18,6 +18,22 @@ npm run ingest   # parses all 26 feeds, upserts pending articles
 npm run crawl    # fetches full content for pending articles
 ```
 
+## Discovery layer (sub-project 2a)
+
+```bash
+export SUPABASE_URL=...
+export SUPABASE_SERVICE_KEY=...
+export YOUTUBE_API_KEY=...
+npm run discover   # Google Trends + YouTube + RSS keyword signals -> candidate_topics
+npm run rank       # computes growth_rate, shortlists top candidates per source
+```
+
+Setup: apply `supabase/migrations/0003_create_candidate_topics_table.sql` (after `0001` and `0002`), and add a `YOUTUBE_API_KEY` secret in the GitHub repo (from a Google Cloud project with the YouTube Data API v3 enabled).
+
+Sources: Google Trends (`@alkalisummer/google-trends-js`, unofficial but verified working for `geo=VN`), YouTube Data API (official), and the existing `articles` table (keyword frequency in recent titles). Reddit and TikTok Creative Center are deliberately out of scope — see `docs/superpowers/specs/2026-08-21-discovery-layer-design.md` §7 for why.
+
+This produces a `candidate_topics` shortlist for the future Apify deep-crawl layer (sub-project 2b, not yet built) to consume — this sub-project does not call Apify.
+
 ## Tests
 
 ```bash
