@@ -20,4 +20,24 @@ export const sources: RssSource[] = [
   { id: 'vietnamnet-tai-chinh', name: 'VietNamNet - Kinh doanh', url: 'https://vietnamnet.vn/rss/kinh-doanh.rss', defaultCategory: 'tai_chinh' },
   { id: 'vietnamnet-giai-tri', name: 'VietNamNet - Giải trí', url: 'https://vietnamnet.vn/rss/giai-tri.rss', defaultCategory: 'giai_tri' },
   { id: 'vietnamnet-du-lich', name: 'VietNamNet - Du lịch', url: 'https://vietnamnet.vn/rss/du-lich.rss', defaultCategory: 'du_lich' },
+
+  // "giai_tri" feed for Nhân Dân / VietnamPlus / VOV is their "Văn hóa" (Culture)
+  // section — these are serious/political outlets with no dedicated showbiz
+  // section; content skews exhibitions/heritage/performances rather than the
+  // celebrity-news tone of the other giai_tri sources above.
+  { id: 'nhandan-tai-chinh', name: 'Nhân Dân - Tài chính, Chứng khoán', url: 'https://nhandan.vn/rss/chungkhoan-1191.rss', defaultCategory: 'tai_chinh' },
+  { id: 'nhandan-giai-tri', name: 'Nhân Dân - Văn hóa', url: 'https://nhandan.vn/rss/vanhoa-1251.rss', defaultCategory: 'giai_tri' },
+  { id: 'nhandan-du-lich', name: 'Nhân Dân - Du lịch', url: 'https://nhandan.vn/rss/du-lich-1257.rss', defaultCategory: 'du_lich' },
+
+  { id: 'vietnamplus-tai-chinh', name: 'VietnamPlus - Tài chính', url: 'https://www.vietnamplus.vn/rss/kinhte/taichinh-343.rss', defaultCategory: 'tai_chinh' },
+  { id: 'vietnamplus-giai-tri', name: 'VietnamPlus - Văn hóa', url: 'https://www.vietnamplus.vn/rss/vanhoa-215.rss', defaultCategory: 'giai_tri' },
+  { id: 'vietnamplus-du-lich', name: 'VietnamPlus - Du lịch', url: 'https://www.vietnamplus.vn/rss/dulich-237.rss', defaultCategory: 'du_lich' },
+
+  { id: 'vov-tai-chinh', name: 'VOV - Kinh tế', url: 'https://vov.vn/rss/kinh-te.rss', defaultCategory: 'tai_chinh' },
+  { id: 'vov-giai-tri', name: 'VOV - Văn hóa', url: 'https://vov.vn/rss/van-hoa.rss', defaultCategory: 'giai_tri' },
+  { id: 'vov-du-lich', name: 'VOV - Du lịch', url: 'https://vov.vn/rss/du-lich.rss', defaultCategory: 'du_lich' },
+
+  // Finance-only publishers — no giai_tri/du_lich section exists on these sites.
+  { id: 'cafef-tai-chinh', name: 'CafeF - Tài chính, Ngân hàng', url: 'https://cafef.vn/tai-chinh-ngan-hang.rss', defaultCategory: 'tai_chinh' },
+  { id: 'vneconomy-tai-chinh', name: 'VnEconomy - Tài chính', url: 'https://vneconomy.vn/tai-chinh.rss', defaultCategory: 'tai_chinh' },
 ];
