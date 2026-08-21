@@ -98,4 +98,26 @@ describe('rankAndSelect', () => {
     expect(repo.candidates.find((c) => c.id === '1')!.is_shortlisted).toBe(true);
     expect(repo.candidates.find((c) => c.id === '3')!.is_shortlisted).toBe(true);
   });
+
+  it('shortlists the top 10 candidates per source by default when topPerSource is not specified', async () => {
+    const repo = new FakeCandidateTopicRepository();
+    // 10 candidates in one source, ranked 1st (highest growth_rate) through 10th.
+    for (let i = 1; i <= 10; i++) {
+      repo.candidates.push(
+        candidate({ id: String(i), source: 'google_trends', keyword: `kw${i}`, growth_rate: 11 - i })
+      );
+    }
+    // An 11th, lowest-ranked candidate that should NOT make the default top-10.
+    repo.candidates.push(
+      candidate({ id: '11', source: 'google_trends', keyword: 'kw11', growth_rate: 0 })
+    );
+
+    const result = await rankAndSelect({ repo, now: NOW });
+
+    expect(result.shortlisted).toBe(10);
+    for (let i = 1; i <= 10; i++) {
+      expect(repo.candidates.find((c) => c.id === String(i))!.is_shortlisted).toBe(true);
+    }
+    expect(repo.candidates.find((c) => c.id === '11')!.is_shortlisted).toBe(false);
+  });
 });

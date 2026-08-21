@@ -35,4 +35,15 @@ describe('aggregateYouTubeKeywords', () => {
     ]);
     expect(result.every((r) => r.metric_value === 0)).toBe(true);
   });
+
+  it('caps the result to the top 200 keywords by metric_value', () => {
+    // 210 videos, each contributing a unique tag — aggregateYouTubeKeywords
+    // would otherwise emit 210 distinct keywords.
+    const videos = Array.from({ length: 210 }, (_, i) => ({
+      snippet: { title: 'video', tags: [`tag${i}`] },
+      statistics: { viewCount: '1' },
+    }));
+    const result = aggregateYouTubeKeywords(videos);
+    expect(result.length).toBeLessThanOrEqual(200);
+  });
 });

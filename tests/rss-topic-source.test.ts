@@ -18,4 +18,19 @@ describe('RssTopicSource', () => {
     expect(source.name).toBe('rss');
     expect(candidates.some((c) => c.keyword === 'vàng')).toBe(true);
   });
+
+  it('requests only 1 day of lookback, so metric_value reflects that day only (not a multi-day rolling window)', async () => {
+    let requestedDays: number | undefined;
+    const repo = {
+      getRecentTitles: async (days: number) => {
+        requestedDays = days;
+        return [];
+      },
+    };
+    const source = new RssTopicSource(repo);
+
+    await source.fetchCandidates();
+
+    expect(requestedDays).toBe(1);
+  });
 });

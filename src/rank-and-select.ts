@@ -16,7 +16,7 @@ export interface RankResult {
   shortlisted: number;
 }
 
-const DEFAULT_TOP_PER_SOURCE = 5;
+const DEFAULT_TOP_PER_SOURCE = 10;
 const DEFAULT_BASELINE_DAYS = 7;
 const NEW_KEYWORD_GROWTH_RATE = 999;
 

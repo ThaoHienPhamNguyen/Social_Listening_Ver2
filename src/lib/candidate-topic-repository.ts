@@ -3,6 +3,7 @@ import type { CandidateTopic } from '../types';
 
 export interface CandidateTopicRepository {
   upsertCandidate(candidate: Partial<CandidateTopic>): Promise<{ error: string | null }>;
+  upsertCandidates(candidates: Partial<CandidateTopic>[]): Promise<{ error: string | null; count: number }>;
   getTodayCandidates(date: string): Promise<CandidateTopic[]>;
   getRecentMetrics(
     source: string,
@@ -22,6 +23,17 @@ export class SupabaseCandidateTopicRepository implements CandidateTopicRepositor
       .from('candidate_topics')
       .upsert(candidate, { onConflict: 'source,keyword,date' });
     return { error: error?.message ?? null };
+  }
+
+  // One upsert statement for the whole batch instead of one round trip per
+  // candidate — this is what actually bounds discovery-ingest's write cost
+  // now that each source is capped to ~200 candidates (see aggregate-*-keywords.ts).
+  async upsertCandidates(candidates: Partial<CandidateTopic>[]) {
+    if (candidates.length === 0) return { error: null, count: 0 };
+    const { error } = await this.client
+      .from('candidate_topics')
+      .upsert(candidates, { onConflict: 'source,keyword,date' });
+    return { error: error?.message ?? null, count: error ? 0 : candidates.length };
   }
 
   async getTodayCandidates(date: string) {

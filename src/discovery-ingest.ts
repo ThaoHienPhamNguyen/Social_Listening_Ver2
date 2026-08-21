@@ -1,5 +1,6 @@
 import type { DiscoverySource } from './lib/discovery-source';
 import type { CandidateTopicRepository } from './lib/candidate-topic-repository';
+import type { CandidateTopic } from './types';
 import { matchCategories } from './lib/match-categories';
 
 export interface DiscoveryIngestDeps {
@@ -12,6 +13,21 @@ export interface DiscoveryIngestResult {
   fetched: number;
   upserted: number;
   errors: string[];
+}
+
+// One upsert call per chunk instead of one per candidate. Each source is
+// already capped to ~200 candidates (aggregate-rss-keywords.ts,
+// aggregate-youtube-keywords.ts), so this is normally a single call — the
+// chunking is a safety net for any source that isn't capped (e.g. Google
+// Trends, whose own upstream response size isn't under this codebase's control).
+const UPSERT_CHUNK_SIZE = 200;
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
 }
 
 export async function ingestDiscoverySource(
@@ -32,20 +48,22 @@ export async function ingestDiscoverySource(
 
   result.fetched = candidates.length;
 
-  for (const candidate of candidates) {
-    const { error } = await deps.repo.upsertCandidate({
-      source: source.name,
-      keyword: candidate.keyword,
-      date,
-      metric_value: candidate.metric_value,
-      growth_rate: candidate.growth_rate,
-      category_hint: matchCategories(candidate.keyword),
-      is_shortlisted: false,
-    });
+  const rows: Partial<CandidateTopic>[] = candidates.map((candidate) => ({
+    source: source.name,
+    keyword: candidate.keyword,
+    date,
+    metric_value: candidate.metric_value,
+    growth_rate: candidate.growth_rate,
+    category_hint: matchCategories(candidate.keyword),
+    is_shortlisted: false,
+  }));
+
+  for (const batch of chunk(rows, UPSERT_CHUNK_SIZE)) {
+    const { error, count } = await deps.repo.upsertCandidates(batch);
     if (error) {
-      result.errors.push(`upsert failed for "${candidate.keyword}": ${error}`);
+      result.errors.push(`batch upsert failed for ${batch.length} candidate(s): ${error}`);
     } else {
-      result.upserted += 1;
+      result.upserted += count;
     }
   }
 

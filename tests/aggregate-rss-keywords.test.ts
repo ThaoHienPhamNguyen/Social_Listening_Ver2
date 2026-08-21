@@ -19,4 +19,12 @@ describe('aggregateRssKeywords', () => {
     const result = aggregateRssKeywords(['Một tiêu đề bất kỳ']);
     expect(result.every((r) => r.growth_rate === null)).toBe(true);
   });
+
+  it('caps the result to the top 200 keywords by metric_value', () => {
+    // 210 titles, each containing a unique 3+ char keyword that appears only once —
+    // aggregateRssKeywords would otherwise emit 210 distinct keywords.
+    const titles = Array.from({ length: 210 }, (_, i) => `duy nhat tukhoa${i}`);
+    const result = aggregateRssKeywords(titles);
+    expect(result.length).toBeLessThanOrEqual(200);
+  });
 });

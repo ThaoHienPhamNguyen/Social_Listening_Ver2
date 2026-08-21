@@ -32,10 +32,10 @@ erDiagram
 | `source` | `text` | `not null`, `check (source in ('google_trends', 'youtube', 'rss'))` | đúng 3 nguồn discovery trong phạm vi sub-project 2a |
 | `keyword` | `text` | `not null` | đã chuẩn hoá lowercase + trim ở tầng app (từng adapter tự làm việc này trước khi upsert) |
 | `date` | `date` | `not null` | ngày ghi nhận tín hiệu, không phải timestamp — dùng để nhóm candidate theo ngày cho `getTodayCandidates`/`rankAndSelect` |
-| `metric_value` | `numeric` | `not null default 0` | số liệu thô, **đơn vị khác nhau theo nguồn**: traffic (Google Trends), view count (YouTube), tần suất xuất hiện trong tiêu đề bài báo cửa sổ rolling gần nhất (RSS) — xem mục Known gaps #2 |
-| `growth_rate` | `numeric` | nullable | % thay đổi so với baseline; Google Trends trả sẵn từ thư viện, YouTube/RSS tự tính trong `rank-and-select.ts` — xem mục Known gaps #1 |
+| `metric_value` | `numeric` | `not null default 0` | số liệu thô, **đơn vị khác nhau theo nguồn**: traffic (Google Trends), view count (YouTube), tần suất xuất hiện trong tiêu đề bài báo **của đúng ngày hôm đó** (RSS, `LOOKBACK_DAYS = 1` từ 2026-08-21) |
+| `growth_rate` | `numeric` | nullable | tỷ lệ thay đổi so với baseline 7 ngày, **cùng đơn vị cho cả 3 nguồn** kể từ 2026-08-21 — Google Trends chuẩn hoá về tỷ lệ qua `normalizeGrowthRate()` (chia %/100) trước khi lưu; YouTube/RSS tự tính tỷ lệ trong `rank-and-select.ts` |
 | `category_hint` | `text[]` | `not null default '{}'` | category suy ra từ `categorize()` có sẵn (tái dùng từ sub-project 1); có thể rỗng nếu từ khoá không match category nào |
-| `is_shortlisted` | `boolean` | `not null default false` | job `rank-and-select` set `true` cho candidate lọt shortlist; xem mục Known gaps #4 về việc cờ này không bao giờ bị reset |
+| `is_shortlisted` | `boolean` | `not null default false` | job `rank-and-select` set `true` cho candidate lọt top-10/nguồn (mặc định `DEFAULT_TOP_PER_SOURCE = 10` từ 2026-08-21); xem mục Known gaps về việc cờ này không bao giờ bị reset |
 | `created_at` | `timestamptz` | `not null default now()` | |
 | `updated_at` | `timestamptz` | `not null default now()` | tự cập nhật qua trigger `candidate_topics_set_updated_at` (cùng migration `0003`, dùng lại function `set_updated_at()` đã tạo ở migration `0002`) |
 
@@ -47,7 +47,7 @@ Ràng buộc bổ sung: `unique (source, keyword, date)` — key dedup, `upsertC
 - `candidate_topics_shortlisted_idx` — btree trên `is_shortlisted`, phục vụ sub-project 2b (Apify deep-crawl) lọc `is_shortlisted = true`.
 - Ràng buộc `unique (source, keyword, date)` đồng thời đóng vai trò index hỗ trợ `getRecentMetrics(source, keyword, sinceDate, beforeDate)` — query này lọc theo đúng 3 cột đầu của unique constraint (cộng thêm range trên `date`), nên tận dụng được index của constraint mà không cần thêm index riêng.
 
-`getTodayCandidates` sắp theo `metric_value` giảm dần và giới hạn 5000 dòng (safety net theo giới hạn "Max rows" mặc định của PostgREST trên Supabase, không phải giá trị đã tune) — nếu bị cắt bớt thì candidate có tín hiệu mạnh nhất vẫn còn, phục vụ đúng nhu cầu chọn top-N của `rankAndSelect`.
+`getTodayCandidates` sắp theo `metric_value` giảm dần và giới hạn 5000 dòng (safety net theo giới hạn "Max rows" mặc định của PostgREST trên Supabase, không phải giá trị đã tune). Kể từ 2026-08-21, mỗi nguồn tự giới hạn tối đa 200 candidate trước khi ghi (`aggregate-rss-keywords.ts`/`aggregate-youtube-keywords.ts`), nên tổng số dòng/ngày thường dưới ~600 — giới hạn 5000 gần như không bao giờ bị chạm tới nữa trong vận hành bình thường, chỉ còn là lớp an toàn cuối cùng.
 
 ## Row Level Security
 
@@ -55,9 +55,14 @@ Ràng buộc bổ sung: `unique (source, keyword, date)` — key dedup, `upsertC
 
 ## Known gaps / limitations
 
-Các điểm sau được ghi nhận từ review cuối sub-project 2a, cố ý để lại (deferred), không phải bug chưa fix:
+**Đã fix (2026-08-21, cùng ngày merge, theo yêu cầu người dùng xử lý các finding còn tồn đọng từ review cuối):**
 
-1. **`growth_rate` không đồng nhất đơn vị giữa các nguồn**: Google Trends trả % tăng trưởng gốc từ thư viện, còn YouTube/RSS được tính là tỷ lệ (ratio) trong `rank-and-select.ts` — không ảnh hưởng xếp hạng (mỗi nguồn so sánh độc lập) nhưng không nên đọc `growth_rate` như một con số tuyệt đối giữa các nguồn cho tới khi được chuẩn hoá.
-2. **RSS `metric_value` dùng cửa sổ rolling 5 ngày** (không phải tần suất trong ngày như spec §4 mô tả) — làm giảm độ nhạy tín hiệu tăng trưởng cho nguồn RSS cụ thể; đây là lựa chọn có chủ đích của plan, không phải lỗi implementation, nhưng cần cân nhắc lại nếu RSS-sourced candidates có vẻ xếp hạng thấp bất thường.
-3. **Khối lượng ghi/đọc chưa có giới hạn ở tầng aggregation** (`extractKeywords` sinh cả unigram + bigram trên toàn bộ tiêu đề 5 ngày, không cap) kết hợp với I/O tuần tự từng dòng (không batch) — có nguy cơ job chạy lâu/tốn kém ở khối lượng dữ liệu thực; nên xử lý trước lần chạy theo lịch đầu tiên của workflow.
-4. **`is_shortlisted` chỉ được set `true`, không bao giờ reset lại `false` cho ngày cũ** — sub-project 2b (Apify deep-crawl) cần tự lọc theo `date`, không chỉ theo `is_shortlisted`.
+- **Đơn vị `growth_rate` đã đồng nhất giữa 3 nguồn** — `GoogleTrendsSource` giờ chia `trafficGrowthRate` cho 100 (`normalizeGrowthRate()`) trước khi lưu, cùng đơn vị tỷ lệ với YouTube/RSS.
+- **RSS `metric_value` đổi từ cửa sổ rolling 5 ngày sang tính đúng tần suất trong ngày** (`RssTopicSource.LOOKBACK_DAYS` 5 → 1), khớp đúng spec §4. Baseline 7 ngày để tính `growth_rate` không đổi — vẫn tự đọc lịch sử `metric_value` từng ngày từ `candidate_topics`.
+- **Giới hạn khối lượng từ khoá + gom ghi thành lô**: `aggregateRssKeywords`/`aggregateYouTubeKeywords` giờ chỉ giữ top 200 candidate/nguồn theo `metric_value` (`capCandidates()`, vì chỉ top-10/nguồn mới vào shortlist, giữ 200 là dư sức). `discovery-ingest.ts` ghi theo lô (`CandidateTopicRepository.upsertCandidates()`, tối đa 200 dòng/lần gọi) thay vì từng dòng một — giảm số round-trip DB từ hàng nghìn xuống còn 1 lần/nguồn trong vận hành bình thường.
+- **Shortlist mở rộng từ top-5 lên top-10/nguồn** (`DEFAULT_TOP_PER_SOURCE` trong `rank-and-select.ts`) — quyết định của người dùng.
+
+**Cố ý chưa xử lý:**
+
+- **`is_shortlisted` chỉ được set `true`, không bao giờ reset lại `false` cho ngày cũ** — sub-project 2b (Apify deep-crawl) cần tự lọc theo `date`, không chỉ theo `is_shortlisted`.
+- `rank-and-select.ts` vẫn đọc/ghi `growth_rate` từng dòng một (`getRecentMetrics`/`updateGrowthRate`), chưa gom lô — quyết định có chủ đích: sau khi giới hạn 200 candidate/nguồn, khối lượng tối đa còn lại (~400-600 dòng/ngày) đủ nhỏ để chấp nhận được mà không cần thêm 1 SQL function tùy chỉnh (Supabase client không hỗ trợ batch UPDATE theo giá trị khác nhau cho từng dòng).

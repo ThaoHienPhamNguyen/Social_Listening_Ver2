@@ -43,6 +43,51 @@ describe('ingestDiscoverySource', () => {
     expect(result.fetched).toBe(0);
     expect(result.errors[0]).toContain('quota exceeded');
   });
+
+  it('writes candidates via a single batched upsert call instead of one call per candidate', async () => {
+    const repo = new FakeCandidateTopicRepository();
+    const source = fakeSource('rss', [
+      { keyword: 'a', metric_value: 1, growth_rate: null },
+      { keyword: 'b', metric_value: 2, growth_rate: null },
+      { keyword: 'c', metric_value: 3, growth_rate: null },
+    ]);
+
+    const result = await ingestDiscoverySource(source, { repo, now: () => new Date('2026-08-21T09:00:00Z') });
+
+    expect(result).toEqual({ source: 'rss', fetched: 3, upserted: 3, errors: [] });
+    expect(repo.upsertCandidatesCallSizes).toEqual([3]);
+  });
+
+  it('splits a large batch into chunks of at most 200 candidates per write call', async () => {
+    const repo = new FakeCandidateTopicRepository();
+    const manyCandidates = Array.from({ length: 201 }, (_, i) => ({
+      keyword: `kw${i}`,
+      metric_value: i,
+      growth_rate: null,
+    }));
+    const source = fakeSource('rss', manyCandidates);
+
+    const result = await ingestDiscoverySource(source, { repo, now: () => new Date('2026-08-21T09:00:00Z') });
+
+    expect(result.upserted).toBe(201);
+    expect(repo.upsertCandidatesCallSizes).toEqual([200, 1]);
+  });
+
+  it('records one error for the whole chunk and does not count it as upserted when a batch write fails', async () => {
+    const repo = new FakeCandidateTopicRepository();
+    repo.upsertCandidatesError = 'db unavailable';
+    const source = fakeSource('rss', [
+      { keyword: 'a', metric_value: 1, growth_rate: null },
+      { keyword: 'b', metric_value: 2, growth_rate: null },
+    ]);
+
+    const result = await ingestDiscoverySource(source, { repo, now: () => new Date('2026-08-21T09:00:00Z') });
+
+    expect(result.fetched).toBe(2);
+    expect(result.upserted).toBe(0);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0]).toContain('db unavailable');
+  });
 });
 
 describe('ingestAllDiscoverySources', () => {

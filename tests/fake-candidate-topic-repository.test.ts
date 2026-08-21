@@ -63,4 +63,37 @@ describe('FakeCandidateTopicRepository', () => {
     expect(repo.candidates[0].is_shortlisted).toBe(true);
     expect(repo.candidates[1].is_shortlisted).toBe(false);
   });
+
+  it('upsertCandidates adds every candidate in the batch in one call', async () => {
+    const repo = new FakeCandidateTopicRepository();
+    const { error, count } = await repo.upsertCandidates([
+      { source: 'youtube', keyword: 'a', date: '2026-08-21', metric_value: 1 },
+      { source: 'youtube', keyword: 'b', date: '2026-08-21', metric_value: 2 },
+    ]);
+    expect(error).toBeNull();
+    expect(count).toBe(2);
+    expect(repo.candidates).toHaveLength(2);
+  });
+
+  it('upsertCandidates overwrites existing rows for the same source+keyword+date, same as upsertCandidate', async () => {
+    const repo = new FakeCandidateTopicRepository();
+    await repo.upsertCandidate({ source: 'rss', keyword: 'x', date: '2026-08-21', metric_value: 10 });
+    await repo.upsertCandidates([{ source: 'rss', keyword: 'x', date: '2026-08-21', metric_value: 99 }]);
+
+    expect(repo.candidates).toHaveLength(1);
+    expect(repo.candidates[0].metric_value).toBe(99);
+  });
+
+  it('upsertCandidates returns the configured error and adds nothing when upsertCandidatesError is set', async () => {
+    const repo = new FakeCandidateTopicRepository();
+    repo.upsertCandidatesError = 'simulated batch failure';
+
+    const { error, count } = await repo.upsertCandidates([
+      { source: 'rss', keyword: 'x', date: '2026-08-21', metric_value: 1 },
+    ]);
+
+    expect(error).toBe('simulated batch failure');
+    expect(count).toBe(0);
+    expect(repo.candidates).toHaveLength(0);
+  });
 });
