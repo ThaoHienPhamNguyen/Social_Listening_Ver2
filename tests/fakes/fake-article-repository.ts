@@ -58,4 +58,11 @@ export class FakeArticleRepository implements ArticleRepository {
     }
     return { error: null };
   }
+
+  async getRecentTitles(days: number) {
+    const sinceMs = Date.now() - days * 24 * 60 * 60 * 1000;
+    return this.articles
+      .filter((a) => a.created_at && new Date(a.created_at).getTime() >= sinceMs)
+      .map((a) => a.title);
+  }
 }

@@ -16,6 +16,7 @@ export interface ArticleRepository {
   getPendingArticles(limit: number, maxAttempts: number): Promise<PendingArticle[]>;
   markDone(id: string, fullContent: string, attempts: number, categories: string[]): Promise<{ error: string | null }>;
   markRetryOrFailed(id: string, attempts: number, maxAttempts: number): Promise<{ error: string | null }>;
+  getRecentTitles(days: number): Promise<string[]>;
 }
 
 export class SupabaseArticleRepository implements ArticleRepository {
@@ -57,5 +58,15 @@ export class SupabaseArticleRepository implements ArticleRepository {
       })
       .eq('id', id);
     return { error: error?.message ?? null };
+  }
+
+  async getRecentTitles(days: number) {
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+    const { data, error } = await this.client
+      .from('articles')
+      .select('title')
+      .gte('created_at', since);
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((row) => row.title as string);
   }
 }
