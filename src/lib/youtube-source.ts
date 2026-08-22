@@ -35,11 +35,21 @@ export class YouTubeTrendingSource implements DiscoverySource {
     }
   }
 
+  // Each seed keyword is its own network call and isolated from the others:
+  // one seed timing out or erroring (quota, transient network failure) must
+  // not discard the other seeds' results, and must not propagate up to
+  // fetchCandidates() and void the already-succeeded mostPopular fetch too.
   private async fetchSeeded(): Promise<RawCandidate[]> {
     const results: RawCandidate[] = [];
     for (const [category, seeds] of Object.entries(youtubeSeedKeywords) as [Category, string[]][]) {
       for (const seed of seeds) {
-        const items = await this.searchClient.searchByKeyword(seed);
+        let items: YouTubeVideoItem[];
+        try {
+          items = await this.searchClient.searchByKeyword(seed);
+        } catch (err) {
+          console.error(`YouTube seed search failed for "${seed}" (${category}): ${(err as Error).message}`);
+          continue;
+        }
         const candidates = aggregateYouTubeKeywords(items);
         for (const candidate of candidates) {
           results.push({ ...candidate, knownCategories: [category] });

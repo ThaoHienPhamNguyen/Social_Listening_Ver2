@@ -82,4 +82,22 @@ describe('YouTubeTrendingSource', () => {
 
     expect(calls).toHaveLength(6); // 2 seeds × 3 categories
   });
+
+  it('keeps mostPopular candidates and other seeds when one seed keyword throws', async () => {
+    stubMostPopularFetch([{ snippet: { title: 'Video', tags: ['thịnh hành'] }, statistics: { viewCount: '999' } }]);
+    const searchClient: YouTubeSearchClient = {
+      searchByKeyword: async (keyword) => {
+        if (keyword === 'chứng khoán') throw new Error('YouTube API request failed: 500');
+        return keyword === 'tài chính'
+          ? [{ snippet: { title: 'Video', tags: ['lãi suất'] }, statistics: { viewCount: '500' } }]
+          : [];
+      },
+    };
+    const source = new YouTubeTrendingSource('fake-key', searchClient);
+
+    const candidates = await source.fetchCandidates();
+
+    expect(candidates.find((c) => c.keyword === 'thịnh hành')).toBeDefined();
+    expect(candidates.find((c) => c.keyword === 'lãi suất')).toBeDefined();
+  });
 });

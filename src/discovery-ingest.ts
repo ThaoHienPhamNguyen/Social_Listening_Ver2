@@ -1,8 +1,10 @@
 import type { DiscoverySource } from './lib/discovery-source';
 import type { CandidateTopicRepository } from './lib/candidate-topic-repository';
-import type { CandidateTopic } from './types';
+import type { CandidateTopic, Category } from './types';
 import { matchCategories } from './lib/match-categories';
 import type { CandidateClassifier } from './lib/candidate-classifier';
+
+const KNOWN_CATEGORIES = new Set<Category>(['tai_chinh', 'giai_tri', 'du_lich']);
 
 export interface DiscoveryIngestDeps {
   repo: CandidateTopicRepository;
@@ -75,8 +77,12 @@ export async function ingestDiscoverySource(
           // Only ever apply a label for a keyword that was actually sent for
           // classification — the real adapter parses raw LLM JSON output, so
           // a response key that happens to collide with an already-resolved
-          // keyword must never overwrite that already-correct hint.
-          if (label !== 'none' && requested.has(keyword)) {
+          // keyword must never overwrite that already-correct hint. The
+          // label itself is untrusted for the same reason: ClassificationLabel
+          // is a type annotation on JSON.parse's output, not a runtime
+          // guarantee, so an out-of-set string from a misbehaving model must
+          // not land in category_hint.
+          if (label !== 'none' && requested.has(keyword) && KNOWN_CATEGORIES.has(label as Category)) {
             categoryHints.set(keyword, [label]);
           }
         }

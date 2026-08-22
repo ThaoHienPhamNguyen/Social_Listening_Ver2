@@ -228,6 +228,21 @@ describe('ingestDiscoverySource', () => {
     expect(giaVang.category_hint).toEqual(['tai_chinh']);
     expect(calls).toEqual([['quang dũng']]);
   });
+
+  it('ignores a classifier label that is not one of the 3 known categories, leaving category_hint empty', async () => {
+    const repo = new FakeCandidateTopicRepository();
+    const classifier: CandidateClassifier = {
+      // Cast past ClassificationLabel's type — this simulates the real
+      // OpenAI adapter parsing raw, untrusted LLM JSON output that doesn't
+      // actually conform to the type the interface promises.
+      classify: async () => ({ 'quang dũng': 'sports' }) as unknown as Record<string, 'tai_chinh'>,
+    };
+    const source = fakeSource('google_trends', [{ keyword: 'quang dũng', metric_value: 100, growth_rate: null }]);
+
+    await ingestDiscoverySource(source, { repo, classifier, now: () => new Date('2026-08-21T09:00:00Z') });
+
+    expect(repo.candidates[0].category_hint).toEqual([]);
+  });
 });
 
 describe('ingestAllDiscoverySources', () => {
