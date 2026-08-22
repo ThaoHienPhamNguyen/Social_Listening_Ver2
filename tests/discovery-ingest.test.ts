@@ -243,6 +243,55 @@ describe('ingestDiscoverySource', () => {
 
     expect(repo.candidates[0].category_hint).toEqual([]);
   });
+
+  it('splits a large batch of uncategorized keywords into multiple classify() calls of at most 50 each', async () => {
+    const repo = new FakeCandidateTopicRepository();
+    const classifier = new FakeCandidateClassifier();
+    const keywords = Array.from({ length: 120 }, (_, i) => `keyword${i}`);
+    const source = fakeSource(
+      'google_trends',
+      keywords.map((keyword) => ({ keyword, metric_value: 1, growth_rate: null }))
+    );
+
+    await ingestDiscoverySource(source, { repo, classifier, now: () => new Date('2026-08-21T09:00:00Z') });
+
+    expect(classifier.calls).toHaveLength(3);
+    expect(classifier.calls.map((c) => c.length)).toEqual([50, 50, 20]);
+    expect(new Set(classifier.calls.flat())).toEqual(new Set(keywords));
+  });
+
+  it('keeps other chunks classified when one chunk throws, isolating the failure per chunk', async () => {
+    const repo = new FakeCandidateTopicRepository();
+    const keywords = Array.from({ length: 60 }, (_, i) => `keyword${i}`);
+    let callCount = 0;
+    const classifier: CandidateClassifier = {
+      classify: async (chunk) => {
+        callCount += 1;
+        if (callCount === 1) throw new Error('This operation was aborted');
+        const result: Record<string, 'tai_chinh'> = {};
+        for (const keyword of chunk) result[keyword] = 'tai_chinh';
+        return result;
+      },
+    };
+    const source = fakeSource(
+      'google_trends',
+      keywords.map((keyword) => ({ keyword, metric_value: 1, growth_rate: null }))
+    );
+
+    const result = await ingestDiscoverySource(source, {
+      repo,
+      classifier,
+      now: () => new Date('2026-08-21T09:00:00Z'),
+    });
+
+    expect(callCount).toBe(2);
+    expect(result.errors.some((e) => e.includes('This operation was aborted'))).toBe(true);
+    // First 50 (the failed chunk) stay uncategorized; the second chunk (10 more) got classified.
+    const secondChunkKeyword = repo.candidates.find((c) => c.keyword === 'keyword50')!;
+    expect(secondChunkKeyword.category_hint).toEqual(['tai_chinh']);
+    const firstChunkKeyword = repo.candidates.find((c) => c.keyword === 'keyword0')!;
+    expect(firstChunkKeyword.category_hint).toEqual([]);
+  });
 });
 
 describe('ingestAllDiscoverySources', () => {

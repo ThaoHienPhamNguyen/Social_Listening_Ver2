@@ -6,7 +6,12 @@ export interface CandidateClassifier {
   classify(keywords: string[]): Promise<Record<string, ClassificationLabel>>;
 }
 
-const FETCH_TIMEOUT_MS = 20000;
+// 20s was observed too tight in production 2026-08-22 (single-batch calls of
+// 70-100+ Vietnamese keywords hit "This operation was aborted" on gpt-5-nano);
+// discovery-ingest.ts now also chunks calls to ~50 keywords each, but keep a
+// generous per-call ceiling too since this runs unattended in CI, not
+// user-facing, so latency is cheap and a spurious timeout isn't.
+const FETCH_TIMEOUT_MS = 60000;
 const MODEL = 'gpt-5-nano';
 
 // Real adapter over the OpenAI Chat Completions REST API, called via native

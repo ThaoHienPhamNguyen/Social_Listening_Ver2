@@ -26,6 +26,16 @@ export interface DiscoveryIngestResult {
 // Trends, whose own upstream response size isn't under this codebase's control).
 const UPSERT_CHUNK_SIZE = 200;
 
+// A source's uncategorized keywords are classified in chunks rather than one
+// giant call: a single source can hand the classifier upwards of 100-200
+// keywords, and one very large prompt risks the request simply taking longer
+// than CandidateClassifier's own timeout (observed in production 2026-08-22:
+// google_trends and youtube both hit "This operation was aborted" on a single
+// big batch). Chunking bounds each call's expected latency and, combined with
+// the per-call try/catch below, means one slow/failing chunk no longer voids
+// classification for the rest of the source's keywords.
+const CLASSIFY_CHUNK_SIZE = 50;
+
 function chunk<T>(items: T[], size: number): T[][] {
   const chunks: T[][] = [];
   for (let i = 0; i < items.length; i += size) {
@@ -69,28 +79,29 @@ export async function ingestDiscoverySource(
     const uniqueEmpty = Array.from(
       new Set(candidates.map((c) => c.keyword).filter((keyword) => (categoryHints.get(keyword) ?? []).length === 0))
     );
-    if (uniqueEmpty.length > 0) {
+    for (const keywordChunk of chunk(uniqueEmpty, CLASSIFY_CHUNK_SIZE)) {
       try {
-        const classified = await deps.classifier.classify(uniqueEmpty);
-        const requested = new Set(uniqueEmpty);
+        const classified = await deps.classifier.classify(keywordChunk);
+        const requested = new Set(keywordChunk);
         for (const [keyword, label] of Object.entries(classified)) {
-          // Only ever apply a label for a keyword that was actually sent for
-          // classification — the real adapter parses raw LLM JSON output, so
-          // a response key that happens to collide with an already-resolved
-          // keyword must never overwrite that already-correct hint. The
-          // label itself is untrusted for the same reason: ClassificationLabel
-          // is a type annotation on JSON.parse's output, not a runtime
-          // guarantee, so an out-of-set string from a misbehaving model must
-          // not land in category_hint.
+          // Only ever apply a label for a keyword that was actually sent in
+          // *this* chunk — the real adapter parses raw LLM JSON output, so a
+          // response key that happens to collide with an already-resolved
+          // keyword (or a different chunk's keyword) must never overwrite
+          // that already-correct hint. The label itself is untrusted for the
+          // same reason: ClassificationLabel is a type annotation on
+          // JSON.parse's output, not a runtime guarantee, so an out-of-set
+          // string from a misbehaving model must not land in category_hint.
           if (label !== 'none' && requested.has(keyword) && KNOWN_CATEGORIES.has(label as Category)) {
             categoryHints.set(keyword, [label]);
           }
         }
       } catch (err) {
-        // Classification failure must not drop or block the rest of this
-        // source's candidates — they're written with whatever category_hint
-        // they already had (possibly still empty), same isolation principle
-        // as the fetch/upsert failure handling elsewhere in this function.
+        // One chunk's classification failure must not drop or block any
+        // other chunk, or the rest of this source's candidates — they're
+        // written with whatever category_hint they already had (possibly
+        // still empty), same isolation principle as the fetch/upsert failure
+        // handling elsewhere in this function.
         result.errors.push(`classification failed: ${(err as Error).message}`);
       }
     }
