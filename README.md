@@ -48,7 +48,7 @@ Live in production since 2026-08-20 — GitHub Actions (`.github/workflows/rss-i
 
 The discovery layer (sub-project 2a) is **live in production since 2026-08-21** — migration `0003_create_candidate_topics_table.sql` applied and `.github/workflows/discovery-ingestion.yml` deployed, verified end-to-end via two real `workflow_dispatch` runs (`google_trends`/`rss`/`youtube` all fetching successfully, `rank-and-select` shortlisting per source). Runs on cron `0 2,5,14 * * *` UTC (09:00/12:00/21:00 ICT). See `docs/superpowers/specs/2026-08-21-discovery-layer-database-schema.md` for the schema and known gaps.
 
-The dashboard (sub-project 4, `dashboard/`) is built and merged to `master` but **not yet deployed** — see `dashboard/README.md`.
+The dashboard (sub-project 4, `dashboard/`) is **live on Vercel since 2026-08-22** — Overview and all 3 sector pages confirmed rendering live data (hot topics from the discovery layer, recent articles from RSS ingestion). See `dashboard/README.md` for deployment details.
 
 ## Known pending items
 
