@@ -2,10 +2,12 @@ import type { DiscoverySource } from './lib/discovery-source';
 import type { CandidateTopicRepository } from './lib/candidate-topic-repository';
 import type { CandidateTopic } from './types';
 import { matchCategories } from './lib/match-categories';
+import type { CandidateClassifier } from './lib/candidate-classifier';
 
 export interface DiscoveryIngestDeps {
   repo: CandidateTopicRepository;
   now?: () => Date;
+  classifier?: CandidateClassifier;
 }
 
 export interface DiscoveryIngestResult {
@@ -48,6 +50,41 @@ export async function ingestDiscoverySource(
 
   result.fetched = candidates.length;
 
+  // category_hint starts as matchCategories() (substring match) unioned with
+  // whatever the source already knew for sure (RSS ground-truth categories,
+  // a YouTube seed's category). Anything still empty after that is a
+  // candidate LLM classification (below) gets a shot at — named entities
+  // (people, places) that no static keyword list can enumerate.
+  const categoryHints = new Map<string, string[]>();
+  for (const candidate of candidates) {
+    const hints = Array.from(
+      new Set([...matchCategories(candidate.keyword), ...(candidate.knownCategories ?? [])])
+    );
+    categoryHints.set(candidate.keyword, hints);
+  }
+
+  if (deps.classifier) {
+    const uniqueEmpty = Array.from(
+      new Set(candidates.map((c) => c.keyword).filter((keyword) => (categoryHints.get(keyword) ?? []).length === 0))
+    );
+    if (uniqueEmpty.length > 0) {
+      try {
+        const classified = await deps.classifier.classify(uniqueEmpty);
+        for (const [keyword, label] of Object.entries(classified)) {
+          if (label !== 'none') {
+            categoryHints.set(keyword, [label]);
+          }
+        }
+      } catch (err) {
+        // Classification failure must not drop or block the rest of this
+        // source's candidates — they're written with whatever category_hint
+        // they already had (possibly still empty), same isolation principle
+        // as the fetch/upsert failure handling elsewhere in this function.
+        result.errors.push(`classification failed: ${(err as Error).message}`);
+      }
+    }
+  }
+
   // The workflow runs discovery-ingest -> rank-and-select up to 3x/day, all
   // writing the same `date`. A keyword that reappears in a later run's fetch
   // must not lose what an earlier run's rank-and-select already computed for
@@ -75,7 +112,7 @@ export async function ingestDiscoverySource(
       keyword: candidate.keyword,
       date,
       metric_value: candidate.metric_value,
-      category_hint: matchCategories(candidate.keyword),
+      category_hint: categoryHints.get(candidate.keyword) ?? [],
     };
     if (candidate.growth_rate !== null) {
       rowsWithGrowthRate.push({ ...row, growth_rate: candidate.growth_rate });

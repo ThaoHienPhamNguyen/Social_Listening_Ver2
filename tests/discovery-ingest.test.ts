@@ -2,12 +2,20 @@ import { describe, it, expect } from 'vitest';
 import { ingestDiscoverySource, ingestAllDiscoverySources } from '../src/discovery-ingest';
 import { rankAndSelect } from '../src/rank-and-select';
 import { FakeCandidateTopicRepository } from './fakes/fake-candidate-topic-repository';
+import { FakeCandidateClassifier } from './fakes/fake-candidate-classifier';
 import type { DiscoverySource } from '../src/lib/discovery-source';
 import type { CandidateTopicRepository } from '../src/lib/candidate-topic-repository';
+import type { CandidateClassifier } from '../src/lib/candidate-classifier';
+import type { Category } from '../src/types';
 
 function fakeSource(
   name: 'google_trends' | 'youtube' | 'rss',
-  candidates: Array<{ keyword: string; metric_value: number; growth_rate: number | null }>
+  candidates: Array<{
+    keyword: string;
+    metric_value: number;
+    growth_rate: number | null;
+    knownCategories?: Category[];
+  }>
 ): DiscoverySource {
   return { name, fetchCandidates: async () => candidates };
 }
@@ -134,6 +142,68 @@ describe('ingestDiscoverySource', () => {
       const hasGrowthRateFlags = new Set(batch.map((row) => 'growth_rate' in row));
       expect(hasGrowthRateFlags.size).toBe(1);
     }
+  });
+
+  it('classifies candidates that still have no category_hint after matchCategories() and knownCategories', async () => {
+    const repo = new FakeCandidateTopicRepository();
+    const classifier = new FakeCandidateClassifier();
+    classifier.labels = { 'quang dũng': 'giai_tri' };
+    const source = fakeSource('google_trends', [{ keyword: 'quang dũng', metric_value: 100, growth_rate: null }]);
+
+    await ingestDiscoverySource(source, { repo, classifier, now: () => new Date('2026-08-21T09:00:00Z') });
+
+    expect(repo.candidates[0].category_hint).toEqual(['giai_tri']);
+    expect(classifier.calls).toEqual([['quang dũng']]);
+  });
+
+  it('does not call the classifier for candidates that already have a category_hint', async () => {
+    const repo = new FakeCandidateTopicRepository();
+    const classifier = new FakeCandidateClassifier();
+    const source = fakeSource('google_trends', [{ keyword: 'giá vàng', metric_value: 100, growth_rate: null }]);
+
+    await ingestDiscoverySource(source, { repo, classifier, now: () => new Date('2026-08-21T09:00:00Z') });
+
+    expect(classifier.calls).toEqual([]);
+  });
+
+  it('leaves category_hint empty and records an error, without dropping the candidate, when classification throws', async () => {
+    const repo = new FakeCandidateTopicRepository();
+    const classifier: CandidateClassifier = {
+      classify: async () => {
+        throw new Error('openai timeout');
+      },
+    };
+    const source = fakeSource('google_trends', [{ keyword: 'quang dũng', metric_value: 100, growth_rate: null }]);
+
+    const result = await ingestDiscoverySource(source, {
+      repo,
+      classifier,
+      now: () => new Date('2026-08-21T09:00:00Z'),
+    });
+
+    expect(repo.candidates[0].category_hint).toEqual([]);
+    expect(result.errors.some((e) => e.includes('openai timeout'))).toBe(true);
+    expect(result.upserted).toBe(1);
+  });
+
+  it('skips classification entirely when no classifier dependency is provided', async () => {
+    const repo = new FakeCandidateTopicRepository();
+    const source = fakeSource('google_trends', [{ keyword: 'quang dũng', metric_value: 100, growth_rate: null }]);
+
+    await ingestDiscoverySource(source, { repo, now: () => new Date('2026-08-21T09:00:00Z') });
+
+    expect(repo.candidates[0].category_hint).toEqual([]);
+  });
+
+  it('uses knownCategories from the candidate (e.g. RSS ground truth or a YouTube seed match) even when matchCategories() finds nothing', async () => {
+    const repo = new FakeCandidateTopicRepository();
+    const source = fakeSource('rss', [
+      { keyword: 'quang dũng', metric_value: 100, growth_rate: null, knownCategories: ['giai_tri'] },
+    ]);
+
+    await ingestDiscoverySource(source, { repo, now: () => new Date('2026-08-21T09:00:00Z') });
+
+    expect(repo.candidates[0].category_hint).toEqual(['giai_tri']);
   });
 });
 
