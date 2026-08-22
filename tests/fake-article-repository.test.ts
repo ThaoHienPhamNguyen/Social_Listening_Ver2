@@ -108,14 +108,14 @@ describe('FakeArticleRepository', () => {
     expect(repo.articles[0].fetch_attempts).toBe(1);
   });
 
-  it('getRecentTitles returns titles of articles created within the given number of days', async () => {
+  it('getRecentTitles returns titles with their categories, for articles created within the given number of days', async () => {
     const repo = new FakeArticleRepository();
     const now = Date.now();
     repo.articles.push(
-      { id: '1', url: 'u1', title: 'Bài mới', published_at: '', source_id: 's', categories: [], snippet: '', full_content: null, content_fetch_status: 'pending', fetch_attempts: 0, created_at: new Date(now - 1 * 24 * 60 * 60 * 1000).toISOString() },
+      { id: '1', url: 'u1', title: 'Bài mới', published_at: '', source_id: 's', categories: ['tai_chinh'], snippet: '', full_content: null, content_fetch_status: 'pending', fetch_attempts: 0, created_at: new Date(now - 1 * 24 * 60 * 60 * 1000).toISOString() },
       { id: '2', url: 'u2', title: 'Bài cũ', published_at: '', source_id: 's', categories: [], snippet: '', full_content: null, content_fetch_status: 'pending', fetch_attempts: 0, created_at: new Date(now - 10 * 24 * 60 * 60 * 1000).toISOString() }
     );
     const titles = await repo.getRecentTitles(5);
-    expect(titles).toEqual(['Bài mới']);
+    expect(titles).toEqual([{ title: 'Bài mới', categories: ['tai_chinh'] }]);
   });
 });

@@ -14,7 +14,7 @@ export class RssTopicSource implements DiscoverySource {
   constructor(private repo: Pick<ArticleRepository, 'getRecentTitles'>) {}
 
   async fetchCandidates(): Promise<RawCandidate[]> {
-    const titles = await this.repo.getRecentTitles(LOOKBACK_DAYS);
-    return aggregateRssKeywords(titles);
+    const articles = await this.repo.getRecentTitles(LOOKBACK_DAYS);
+    return aggregateRssKeywords(articles);
   }
 }

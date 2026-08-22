@@ -9,6 +9,11 @@ export interface PendingArticle {
   categories: string[];
 }
 
+export interface RecentArticleTitle {
+  title: string;
+  categories: string[];
+}
+
 export interface ArticleRepository {
   upsertArticle(article: Partial<Article>): Promise<{ error: string | null }>;
   /** Throws if the underlying query fails — a caller should not treat a
@@ -16,7 +21,7 @@ export interface ArticleRepository {
   getPendingArticles(limit: number, maxAttempts: number): Promise<PendingArticle[]>;
   markDone(id: string, fullContent: string, attempts: number, categories: string[]): Promise<{ error: string | null }>;
   markRetryOrFailed(id: string, attempts: number, maxAttempts: number): Promise<{ error: string | null }>;
-  getRecentTitles(days: number): Promise<string[]>;
+  getRecentTitles(days: number): Promise<RecentArticleTitle[]>;
 }
 
 export class SupabaseArticleRepository implements ArticleRepository {
@@ -68,11 +73,14 @@ export class SupabaseArticleRepository implements ArticleRepository {
     // keyword-cardinality is already a known follow-up concern separately.
     const { data, error } = await this.client
       .from('articles')
-      .select('title')
+      .select('title, categories')
       .gte('created_at', since)
       .order('created_at', { ascending: true })
       .limit(5000);
     if (error) throw new Error(error.message);
-    return (data ?? []).map((row) => row.title as string);
+    return (data ?? []).map((row) => ({
+      title: row.title as string,
+      categories: (row.categories as string[] | null) ?? [],
+    }));
   }
 }

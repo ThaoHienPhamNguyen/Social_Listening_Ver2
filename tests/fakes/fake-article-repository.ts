@@ -63,6 +63,6 @@ export class FakeArticleRepository implements ArticleRepository {
     const sinceMs = Date.now() - days * 24 * 60 * 60 * 1000;
     return this.articles
       .filter((a) => a.created_at && new Date(a.created_at).getTime() >= sinceMs)
-      .map((a) => a.title);
+      .map((a) => ({ title: a.title, categories: a.categories }));
   }
 }

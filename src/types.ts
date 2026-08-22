@@ -38,6 +38,10 @@ export interface RawCandidate {
   keyword: string;
   metric_value: number;
   growth_rate: number | null;
+  // Category already known from the source itself (RSS: the article's real
+  // `categories`; YouTube: which seed keyword's category produced this
+  // candidate) — bypasses matchCategories()'s substring guessing for these.
+  knownCategories?: Category[];
 }
 
 export interface CandidateTopic {
