@@ -53,5 +53,5 @@ The dashboard (sub-project 4, `dashboard/`) is built and merged to `master` but 
 ## Known pending items
 
 - Feed URLs in `config/sources.config.ts` were verified live on 2026-08-20; re-check if ingestion starts silently returning 0 items for a source.
-- RLS is enabled on `articles` with no policies — was deferred until a real anon-key consumer existed. The dashboard now reads via the anon key, so this needs policies before the dashboard is deployed publicly. See the database schema doc for details.
-- RLS is enabled on `candidate_topics` with no policies — same status as `articles`, needs policies before any anon-key consumer reads it. See the discovery layer schema doc for details and other known limitations.
+- RLS is enabled on `articles` with no policies — intentionally deferred until a real anon-key consumer exists. The dashboard (sub-project 4) reads via the **service_role** key server-side by design (never the anon key — see `dashboard/lib/supabase.ts`), so it does not trigger this yet. See the database schema doc for details.
+- RLS is enabled on `candidate_topics` with no policies — same status as `articles`, see the discovery layer schema doc for details and other known limitations.
