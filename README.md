@@ -28,7 +28,7 @@ npm run discover   # Google Trends + YouTube + RSS keyword signals -> candidate_
 npm run rank       # computes growth_rate, shortlists top candidates per source
 ```
 
-Setup: apply `supabase/migrations/0003_create_candidate_topics_table.sql` (after `0001` and `0002`), and add a `YOUTUBE_API_KEY` secret in the GitHub repo (from a Google Cloud project with the YouTube Data API v3 enabled).
+Setup: apply `supabase/migrations/0003_create_candidate_topics_table.sql` (after `0001` and `0002`), and add a `YOUTUBE_API_KEY` secret in the GitHub repo (from a Google Cloud project with the YouTube Data API v3 enabled) and an `OPENAI_API_KEY` secret (from an OpenAI account with billing enabled — used for `gpt-5-nano` category classification, ~$0.07–0.35/month at current volume; see `docs/superpowers/specs/2026-08-22-discovery-category-accuracy-design.md`).
 
 Sources: Google Trends (`@alkalisummer/google-trends-js`, unofficial but verified working for `geo=VN`), YouTube Data API (official), and the existing `articles` table (keyword frequency in recent titles). Reddit and TikTok Creative Center are deliberately out of scope — see `docs/superpowers/specs/2026-08-21-discovery-layer-design.md` §7 for why.
 
@@ -47,6 +47,8 @@ npm test
 Live in production since 2026-08-20 — GitHub Actions (`.github/workflows/rss-ingestion.yml`, cron 08:00/11:00/20:00 ICT) + Supabase project "Social Listening ver 2" (ap-southeast-2). See `docs/superpowers/specs/2026-08-20-rss-ingestion-database-schema.md` for the schema and current source list.
 
 The discovery layer (sub-project 2a) is **live in production since 2026-08-21** — migration `0003_create_candidate_topics_table.sql` applied and `.github/workflows/discovery-ingestion.yml` deployed, verified end-to-end via two real `workflow_dispatch` runs (`google_trends`/`rss`/`youtube` all fetching successfully, `rank-and-select` shortlisting per source). Runs on cron `0 2,5,14 * * *` UTC (09:00/12:00/21:00 ICT). See `docs/superpowers/specs/2026-08-21-discovery-layer-database-schema.md` for the schema and known gaps.
+
+`category_hint` accuracy was improved 2026-08-22 (see `docs/superpowers/specs/2026-08-22-discovery-category-accuracy-design.md`): RSS candidates now carry the source article's real category instead of a keyword guess, YouTube adds a seed-driven `search.list` fetch per category, and any candidate still uncategorized after that is classified by `gpt-5-nano` (OpenAI). `rank-and-select` gained an additive per-(source, category) top-10 shortlist floor so a dashboard sector page isn't left empty on a day generic trending skews outside all 3 categories.
 
 The dashboard (sub-project 4, `dashboard/`) is **live on Vercel since 2026-08-22** — Overview and all 3 sector pages confirmed rendering live data (hot topics from the discovery layer, recent articles from RSS ingestion). See `dashboard/README.md` for deployment details.
 

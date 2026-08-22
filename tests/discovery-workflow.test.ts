@@ -18,4 +18,9 @@ describe('.github/workflows/discovery-ingestion.yml', () => {
     expect(schedule).toHaveLength(1);
     expect(schedule[0].cron.split(' ')[1].split(',')).toHaveLength(3);
   });
+
+  it('passes OPENAI_API_KEY through to the discovery-ingest job for LLM category classification', () => {
+    const step = doc['jobs']['discovery-ingest']['steps'].find((s: any) => s.run === 'npm run discover');
+    expect(step?.env?.OPENAI_API_KEY).toBe('${{ secrets.OPENAI_API_KEY }}');
+  });
 });
