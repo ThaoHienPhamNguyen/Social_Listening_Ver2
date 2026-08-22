@@ -152,4 +152,75 @@ describe('rankAndSelect', () => {
     }
     expect(repo.candidates.find((c) => c.id === '11')!.is_shortlisted).toBe(false);
   });
+
+  it('shortlists a candidate that ranks in the top-10 within its own category even though it misses the source-wide top-10', async () => {
+    const repo = new FakeCandidateTopicRepository();
+    // 12 youtube candidates with no category, ranked 1..12 by growth_rate —
+    // the source-wide top-10 keeps only the first 10, so ranks 11 and 12 miss it.
+    for (let i = 1; i <= 12; i++) {
+      repo.candidates.push(
+        candidate({ id: `no-cat-${i}`, source: 'youtube', keyword: `kw${i}`, metric_value: 100 * i })
+      );
+    }
+    // Historical data to establish baselines for growth_rate calculation
+    for (let i = 1; i <= 12; i++) {
+      repo.candidates.push(
+        candidate({ id: `no-cat-h-${i}`, source: 'youtube', keyword: `kw${i}`, metric_value: 10, date: '2026-08-20' })
+      );
+    }
+    // The only tai_chinh-tagged candidate in this source — automatically
+    // top-1 within its own category even with a growth_rate lower than all
+    // 12 above, so it misses the source-wide top-10 entirely.
+    repo.candidates.push(
+      candidate({
+        id: 'tai-chinh-1',
+        source: 'youtube',
+        keyword: 'chứng khoán',
+        metric_value: 50,
+        category_hint: ['tai_chinh'],
+      })
+    );
+    // Historical data for tai_chinh candidate
+    repo.candidates.push(
+      candidate({
+        id: 'tai-chinh-h',
+        source: 'youtube',
+        keyword: 'chứng khoán',
+        metric_value: 100,
+        date: '2026-08-20',
+      })
+    );
+
+    await rankAndSelect({ repo, now: NOW });
+
+    const taiChinh = repo.candidates.find((c) => c.id === 'tai-chinh-1')!;
+    expect(taiChinh.is_shortlisted).toBe(true);
+  });
+
+  it('does not shortlist a candidate with no category_hint just because same-source candidates elsewhere fill a category top-10', async () => {
+    const repo = new FakeCandidateTopicRepository();
+    // Today's candidates (date='2026-08-21')
+    repo.candidates.push(
+      candidate({ id: 'low-1', source: 'youtube', keyword: 'kw-low', metric_value: 50, category_hint: [] })
+    );
+    for (let i = 1; i <= 10; i++) {
+      repo.candidates.push(
+        candidate({ id: `du-lich-${i}`, source: 'youtube', keyword: `dl${i}`, metric_value: 100 + i, category_hint: ['du_lich'] })
+      );
+    }
+    // Historical data (date='2026-08-20') to establish baselines for growth_rate calculation
+    repo.candidates.push(
+      candidate({ id: 'low-h', source: 'youtube', keyword: 'kw-low', metric_value: 100, date: '2026-08-20' })
+    );
+    for (let i = 1; i <= 10; i++) {
+      repo.candidates.push(
+        candidate({ id: `du-lich-h-${i}`, source: 'youtube', keyword: `dl${i}`, metric_value: 100, date: '2026-08-20' })
+      );
+    }
+
+    await rankAndSelect({ repo, now: NOW });
+
+    const low = repo.candidates.find((c) => c.id === 'low-1')!;
+    expect(low.is_shortlisted).toBe(false);
+  });
 });

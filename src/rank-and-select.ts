@@ -1,5 +1,7 @@
 import type { CandidateTopicRepository } from './lib/candidate-topic-repository';
-import type { CandidateTopic } from './types';
+import type { CandidateTopic, Category } from './types';
+
+const CATEGORIES: Category[] = ['tai_chinh', 'giai_tri', 'du_lich'];
 
 export interface RankDeps {
   repo: CandidateTopicRepository;
@@ -67,6 +69,23 @@ export async function rankAndSelect(deps: RankDeps, options: RankOptions = {}): 
     const top = [...list].sort((a, b) => (b.growth_rate ?? 0) - (a.growth_rate ?? 0)).slice(0, topPerSource);
     for (const item of top) {
       shortlistedKeywords.add(item.keyword);
+    }
+  }
+
+  // Additive floor: a candidate that misses the source-wide top-N can still
+  // qualify by being top-N WITHIN its own category — this is what guarantees
+  // a dashboard sector page has candidates even on a day where generic
+  // trending (sports, lottery — outside all 3 categories) dominates a
+  // source's overall top-N. A candidate with no category_hint never enters
+  // any of these groups, so it's unaffected — its only path to
+  // is_shortlisted stays the source-wide top-N above.
+  for (const category of CATEGORIES) {
+    for (const list of bySource.values()) {
+      const inCategory = list.filter((c) => c.category_hint.includes(category));
+      const top = [...inCategory].sort((a, b) => (b.growth_rate ?? 0) - (a.growth_rate ?? 0)).slice(0, topPerSource);
+      for (const item of top) {
+        shortlistedKeywords.add(item.keyword);
+      }
     }
   }
 
