@@ -46,10 +46,12 @@ npm test
 
 Live in production since 2026-08-20 — GitHub Actions (`.github/workflows/rss-ingestion.yml`, cron 08:00/11:00/20:00 ICT) + Supabase project "Social Listening ver 2" (ap-southeast-2). See `docs/superpowers/specs/2026-08-20-rss-ingestion-database-schema.md` for the schema and current source list.
 
-The discovery layer (sub-project 2a) is committed but **not yet deployed** — `.github/workflows/discovery-ingestion.yml` and migration `0003_create_candidate_topics_table.sql` have not been applied to production, unlike the RSS ingestion pipeline above. See `docs/superpowers/specs/2026-08-21-discovery-layer-database-schema.md` for status and known gaps.
+The discovery layer (sub-project 2a) is **live in production since 2026-08-21** — migration `0003_create_candidate_topics_table.sql` applied and `.github/workflows/discovery-ingestion.yml` deployed, verified end-to-end via two real `workflow_dispatch` runs (`google_trends`/`rss`/`youtube` all fetching successfully, `rank-and-select` shortlisting per source). Runs on cron `0 2,5,14 * * *` UTC (09:00/12:00/21:00 ICT). See `docs/superpowers/specs/2026-08-21-discovery-layer-database-schema.md` for the schema and known gaps.
+
+The dashboard (sub-project 4, `dashboard/`) is built and merged to `master` but **not yet deployed** — see `dashboard/README.md`.
 
 ## Known pending items
 
 - Feed URLs in `config/sources.config.ts` were verified live on 2026-08-20; re-check if ingestion starts silently returning 0 items for a source.
-- RLS is enabled on `articles` with no policies — intentionally deferred until a real anon-key consumer (e.g. a future dashboard) exists. See the database schema doc for details.
-- RLS is enabled on `candidate_topics` with no policies — same status as `articles`, see the discovery layer schema doc for details and other known limitations.
+- RLS is enabled on `articles` with no policies — was deferred until a real anon-key consumer existed. The dashboard now reads via the anon key, so this needs policies before the dashboard is deployed publicly. See the database schema doc for details.
+- RLS is enabled on `candidate_topics` with no policies — same status as `articles`, needs policies before any anon-key consumer reads it. See the discovery layer schema doc for details and other known limitations.
