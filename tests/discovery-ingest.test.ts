@@ -205,6 +205,29 @@ describe('ingestDiscoverySource', () => {
 
     expect(repo.candidates[0].category_hint).toEqual(['giai_tri']);
   });
+
+  it('does not let the classifier overwrite a category_hint that was already resolved via matchCategories(), even if the classifier response includes that keyword', async () => {
+    const repo = new FakeCandidateTopicRepository();
+    const calls: string[][] = [];
+    const classifier: CandidateClassifier = {
+      classify: async (keywords) => {
+        calls.push(keywords);
+        // A lenient/misbehaving response that includes a keyword never asked
+        // for, with a label that contradicts the already-resolved hint.
+        return { 'giá vàng': 'giai_tri', 'quang dũng': 'giai_tri' };
+      },
+    };
+    const source = fakeSource('google_trends', [
+      { keyword: 'giá vàng', metric_value: 100, growth_rate: null },
+      { keyword: 'quang dũng', metric_value: 50, growth_rate: null },
+    ]);
+
+    await ingestDiscoverySource(source, { repo, classifier, now: () => new Date('2026-08-21T09:00:00Z') });
+
+    const giaVang = repo.candidates.find((c) => c.keyword === 'giá vàng')!;
+    expect(giaVang.category_hint).toEqual(['tai_chinh']);
+    expect(calls).toEqual([['quang dũng']]);
+  });
 });
 
 describe('ingestAllDiscoverySources', () => {

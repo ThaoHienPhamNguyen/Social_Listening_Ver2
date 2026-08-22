@@ -70,8 +70,13 @@ export async function ingestDiscoverySource(
     if (uniqueEmpty.length > 0) {
       try {
         const classified = await deps.classifier.classify(uniqueEmpty);
+        const requested = new Set(uniqueEmpty);
         for (const [keyword, label] of Object.entries(classified)) {
-          if (label !== 'none') {
+          // Only ever apply a label for a keyword that was actually sent for
+          // classification — the real adapter parses raw LLM JSON output, so
+          // a response key that happens to collide with an already-resolved
+          // keyword must never overwrite that already-correct hint.
+          if (label !== 'none' && requested.has(keyword)) {
             categoryHints.set(keyword, [label]);
           }
         }
