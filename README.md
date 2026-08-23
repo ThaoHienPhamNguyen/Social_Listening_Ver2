@@ -64,6 +64,20 @@ Uses `apify/facebook-posts-scraper` against a small hard-coded seed list (`src/l
 
 Note: the idempotency guard only collapses cost to 1 paid run/day if at least one row is written; on a day where every page fails, each of the 3 daily cron runs pays Apify separately.
 
+## Sentiment + Engagement Metrics (sub-project 3, phần 1)
+
+```bash
+export SUPABASE_URL=...
+export SUPABASE_SERVICE_KEY=...
+export OPENAI_API_KEY=...   # optional — job skips gracefully if unset
+npm run classify-sentiment    # fills sentiment (positive/negative/neutral) on unclassified topic_social_data/facebook_page_data rows
+npm run aggregate-engagement  # sums today's engagement counts into threads_engagement_daily / facebook_engagement_daily
+```
+
+Setup: apply `supabase/migrations/0006_add_sentiment_columns.sql` and `0007_add_engagement_daily_tables.sql` (after `0001`-`0005`). No new secret needed — `classify-sentiment` reuses the existing `OPENAI_API_KEY` (from sub-project 2a), `aggregate-engagement` only needs Supabase.
+
+Data layer only — no dashboard display yet (a future round of design work, same as sub-project 2b/2c's social data). Both run as their own jobs in `discovery-ingestion.yml`, `needs: [deep-crawl, deep-crawl-facebook]`. Sentiment classification is LLM-based (`gpt-5-nano`, same model as category classification), chunked 20 posts/call; engagement aggregation is pure SQL-equivalent summing, no LLM. See `docs/superpowers/specs/2026-08-23-sentiment-engagement-metrics-design.md` for the full design.
+
 ## Tests
 
 ```bash
@@ -90,3 +104,4 @@ The dashboard (sub-project 4, `dashboard/`) is **live on Vercel since 2026-08-22
 - The 6 Facebook Page URLs in `src/lib/facebook-seed-pages.ts` were only checked for HTTP-200/redirect liveness pre-launch, not confirmed brand identity ahead of time — but the live-verification run above confirms all 6 are correct, real Pages: a wrong-brand or dead page would have produced 0 posts for that page, and none did (per-page counts: cafef.vn=5, vneconomy.vn=15, kenh14=1, Saostar.vn=15, vietravel=15, klook.vietnam=1).
 - The field names `apify-facebook-client.ts` maps from the actor's response (`url`/`text`/`likes`/`comments`/`shares`/`time`) were best-effort guesses, unverified against a real Apify dataset item pre-launch — the live-verification run above confirms they're correct (`errors=0`, 52 real posts upserted; wrong field names would have produced 0 posts across the board despite pages returning data).
 - The design spec's 2/3-per-page-failure expectation (from 2b's pricing-spike test of 3 *general news* pages) did **not** hold for 2c's 6 *thematically-focused* pages — all 6 succeeded on the first live run. Worth revisiting the `MAX_POSTS_PER_PAGE`/seed-list-size budget assumptions in a future session now that real reliability data exists; see `docs/superpowers/specs/2026-08-23-deep-crawl-facebook-design.md` §5 for the original worst-case-vs-expected-actual framing this run partially invalidates (in the good direction).
+- Migration `0006_add_sentiment_columns.sql` and `0007_add_engagement_daily_tables.sql` are **not yet applied** to production — until a human applies both, the `classify-sentiment` and `aggregate-engagement` jobs will fail every cron run (isolated failure via `if: ${{ !cancelled() }}`, but red until fixed). See `docs/superpowers/specs/2026-08-23-sentiment-engagement-metrics-database-schema.md` for the schema.
