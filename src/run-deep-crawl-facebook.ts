@@ -17,7 +17,7 @@ async function main() {
   }
 
   console.log(
-    `pagesCrawled=${result.pagesCrawled} postsUpserted=${result.postsUpserted} errors=${result.errors.length}`
+    `pagesAttempted=${result.pagesAttempted} postsUpserted=${result.postsUpserted} errors=${result.errors.length}`
   );
   if (result.errors.length > 0) {
     result.errors.forEach((e) => console.error(`  - ${e}`));

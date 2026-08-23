@@ -58,6 +58,20 @@ export class ApifyFacebookPageScrapeClient implements FacebookPageScrapeClient {
         throw new Error(`Apify request failed: ${response.status} ${bodyText.slice(0, 200)}`);
       }
       const items = (await response.json()) as Array<Record<string, unknown>>;
+      // Field names below (url/text/likes/comments/shares/time) are
+      // best-effort guesses at apify/facebook-posts-scraper's real dataset
+      // item shape, unverified against a real Apify response — unlike 2b's
+      // Threads field names, which were confirmed live during 2b's pricing
+      // spike. If a live run reports pagesAttempted>0 with postsUpserted=0
+      // despite pages returning data, these names are the first thing to
+      // re-check against an actual dataset item in the Apify Console.
+      //
+      // Ambiguity note: if `items` is non-empty here but the filter below
+      // drops every item (e.g. because `item.url` is actually named
+      // something else), the returned array will be empty in exactly the
+      // same way as a page that genuinely has no posts — this method can't
+      // distinguish "wrong field names" from "no data" by itself. See the
+      // per-page console.log in deep-crawl-facebook.ts for the diagnostic.
       return items
         .filter((item) => typeof item.url === 'string')
         .map((item) => ({

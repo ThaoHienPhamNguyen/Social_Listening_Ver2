@@ -61,7 +61,7 @@ describe('runDeepCrawlFacebook', () => {
     const result = await runDeepCrawlFacebook({ socialRepo, client, seedPages: TEST_SEED_PAGES, now: NOW });
 
     expect(result.skipped).toBe(false);
-    expect(result.pagesCrawled).toBe(2);
+    expect(result.pagesAttempted).toBe(2);
     expect(client.calls.sort()).toEqual([
       'https://www.facebook.com/entertainment-page',
       'https://www.facebook.com/finance-page',
@@ -148,6 +148,6 @@ describe('runDeepCrawlFacebook', () => {
 
     const result = await runDeepCrawlFacebook({ socialRepo, client, now: NOW });
 
-    expect(result.pagesCrawled).toBe(6);
+    expect(result.pagesAttempted).toBe(6);
   });
 });

@@ -14,7 +14,7 @@ export interface DeepCrawlFacebookDeps {
 
 export interface DeepCrawlFacebookResult {
   skipped: boolean;
-  pagesCrawled: number;
+  pagesAttempted: number;
   postsUpserted: number;
   errors: string[];
 }
@@ -22,7 +22,7 @@ export interface DeepCrawlFacebookResult {
 export async function runDeepCrawlFacebook(deps: DeepCrawlFacebookDeps): Promise<DeepCrawlFacebookResult> {
   const now = deps.now ?? (() => new Date());
   const date = now().toISOString().slice(0, 10);
-  const result: DeepCrawlFacebookResult = { skipped: false, pagesCrawled: 0, postsUpserted: 0, errors: [] };
+  const result: DeepCrawlFacebookResult = { skipped: false, pagesAttempted: 0, postsUpserted: 0, errors: [] };
 
   // Idempotency guard — same reasoning as deep-crawl.ts (2b): robust against
   // cron schedule changes and repeated workflow_dispatch runs on the same
@@ -34,11 +34,16 @@ export async function runDeepCrawlFacebook(deps: DeepCrawlFacebookDeps): Promise
   }
 
   const seedPages = deps.seedPages ?? FACEBOOK_SEED_PAGES;
-  result.pagesCrawled = seedPages.length;
+  result.pagesAttempted = seedPages.length;
 
   for (const page of seedPages) {
     try {
       const posts = await deps.client.scrapePage(page.url);
+      // Per-page visibility for the first live run — without this, a page
+      // that returns 0 posts because of a real actor failure/wrong field
+      // names (see apify-facebook-client.ts) is indistinguishable in the
+      // job's log output from a page that legitimately has no posts.
+      console.log(`${page.url}: ${posts.length} posts`);
       // Dedupe by post_url before upserting — same reason as deep-crawl.ts
       // (2b): every row in this batch shares page_url, so a duplicated
       // post_url would collide on the same unique(page_url,post_url)
