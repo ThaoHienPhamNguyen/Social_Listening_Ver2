@@ -16,6 +16,14 @@ export interface FacebookSeedPage {
 // To scale up later (more pages, or raise MAX_POSTS_PER_PAGE in
 // apify-facebook-client.ts), just edit this array/constant — no
 // architecture change needed. See design spec §5.
+//
+// IMPORTANT: these URLs were only checked for HTTP-200/redirect liveness
+// (the page resolves and doesn't 404), NOT for confirmed brand identity —
+// a 200 status does not prove a page actually belongs to the intended
+// brand (Facebook returns 200 for plenty of pages that aren't who they
+// claim to be). Treat the first live run's `no_items`/`not_available`
+// errors, or obviously-wrong post content in the logs, as the real signal
+// to re-check a URL — not the fact that it currently returns 200.
 export const FACEBOOK_SEED_PAGES: FacebookSeedPage[] = [
   { url: 'https://www.facebook.com/cafef.vn', category: 'tai_chinh' },
   { url: 'https://www.facebook.com/vneconomy.vn', category: 'tai_chinh' },

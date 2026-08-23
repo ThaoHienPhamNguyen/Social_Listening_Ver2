@@ -1,7 +1,7 @@
 # Deep-crawl Facebook — sub-project 2c
 
 **Ngày:** 2026-08-23
-**Trạng thái:** Approved, chờ viết plan
+**Trạng thái:** Đã implement — 8/8 task hoàn thành, chờ merge
 **Thuộc:** lớp deep-crawl trong [2026-08-20-social-listening-architecture-design.md](./2026-08-20-social-listening-architecture-design.md) §2/§4 — phần "Apify / social media crawl ingestion" của sub-project 2, sau [discovery layer (2a)](./2026-08-21-discovery-layer-design.md) và [Threads deep-crawl (2b)](./2026-08-23-deep-crawl-threads-design.md).
 
 ## 1. Phạm vi

@@ -1,7 +1,7 @@
 # Deep-crawl Threads — Database Schema
 
 **Ngày:** 2026-08-23
-**Trạng thái:** Chưa deploy — migration 0004 chưa apply lên production
+**Trạng thái:** Đã deploy — migration 0004 đã apply lên production, `deep-crawl` job live-verified
 **Thuộc:** chi tiết hoá phần data model của [2026-08-23-deep-crawl-threads-design.md](./2026-08-23-deep-crawl-threads-design.md), phản ánh đúng migration đã viết (`supabase/migrations/0004_add_topic_social_data.sql`), chưa phải bản đã chạy thật trên Supabase.
 
 ## Sơ đồ

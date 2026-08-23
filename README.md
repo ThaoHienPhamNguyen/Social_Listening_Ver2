@@ -62,6 +62,8 @@ Setup: apply `supabase/migrations/0005_add_facebook_page_data.sql` (after `0001`
 
 Uses `apify/facebook-posts-scraper` against a small hard-coded seed list (`src/lib/facebook-seed-pages.ts`), not keyword search — Facebook's actor only accepts specific Page URLs, unlike Threads. Runs as its own job in `discovery-ingestion.yml`, independent of `candidate_topics`/the other 3 jobs (no `needs:`), guarded by the same per-day idempotency check as `deep-crawl`. Deliberately small/exploratory scale (`MAX_POSTS_PER_PAGE=15`, 6 pages) to measure real cost/reliability before deciding whether to scale up — see `docs/superpowers/specs/2026-08-23-deep-crawl-facebook-design.md` §5.
 
+Note: the idempotency guard only collapses cost to 1 paid run/day if at least one row is written; on a day where every page fails, each of the 3 daily cron runs pays Apify separately.
+
 ## Tests
 
 ```bash
@@ -85,4 +87,5 @@ The dashboard (sub-project 4, `dashboard/`) is **live on Vercel since 2026-08-22
 - RLS is enabled on `candidate_topics` with no policies — same status as `articles`, see the discovery layer schema doc for details and other known limitations.
 - Migration `0004_add_topic_social_data.sql` is applied to production and the `deep-crawl` job (Threads) is live-verified via a real `workflow_dispatch` run (`topicsSelected=8 postsUpserted=400 errors=0`). See `docs/superpowers/specs/2026-08-23-deep-crawl-threads-database-schema.md` for the schema.
 - Migration `0005_add_facebook_page_data.sql` is **not yet applied** to production — until a human applies it, the `deep-crawl-facebook` job will fail every cron run (isolated failure via `if: ${{ !cancelled() }}`, but red until fixed). No new secret needed (reuses `APIFY_TOKEN`). See `docs/superpowers/specs/2026-08-23-deep-crawl-facebook-database-schema.md` for the schema.
-- The 6 Facebook Page URLs in `src/lib/facebook-seed-pages.ts` were picked without a live browser check in this session — confirm they still resolve to real, active Pages if the `deep-crawl-facebook` job logs `no_items`/`not_available` errors for all 6 on its first live run.
+- The 6 Facebook Page URLs in `src/lib/facebook-seed-pages.ts` were only checked for HTTP-200/redirect liveness in this session, NOT confirmed brand identity — a 200 status does not prove a page actually belongs to the intended brand. Treat `no_items`/`not_available` errors for all 6 (or, per the field-names caveat below, obviously-wrong post content) on the first live run as the real signal to re-check.
+- The field names `apify-facebook-client.ts` maps from the actor's response (`url`/`text`/`likes`/`comments`/`shares`/`time`) are best-effort guesses, unverified against a real Apify dataset item — unlike 2b's Threads field names, which were confirmed during 2b's pricing spike. If the job logs `pagesAttempted>0` but `postsUpserted=0` despite pages returning data, check these field names first.
