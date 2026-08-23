@@ -36,6 +36,19 @@ Schedule: `discovery-ingestion.yml` runs 1 hour after `rss-ingestion.yml` (09:00
 
 This produces a `candidate_topics` shortlist for the future Apify deep-crawl layer (sub-project 2b, not yet built) to consume — this sub-project does not call Apify.
 
+## Deep-crawl Threads (sub-project 2b v1)
+
+```bash
+export SUPABASE_URL=...
+export SUPABASE_SERVICE_KEY=...
+export APIFY_TOKEN=...
+npm run deep-crawl   # reads today's shortlisted candidate_topics, searches Threads for up to 8 of them -> topic_social_data
+```
+
+Setup: apply `supabase/migrations/0004_add_topic_social_data.sql` (after `0001`-`0003`), and add an `APIFY_TOKEN` secret in the GitHub repo (from an Apify account — used for `futurizerush/meta-threads-scraper`, ~$39/month at 8 topics/day x 50 posts/topic, 1x/day; see `docs/superpowers/specs/2026-08-23-deep-crawl-threads-design.md`).
+
+Scoped to Threads only — Facebook and TikTok are deliberately out of scope, see the design spec §7/§8 for why. Runs as a 3rd job in `discovery-ingestion.yml`, guarded by an idempotency check (skips if `topic_social_data` already has rows for today) rather than a hardcoded run time, so it only spends Apify budget once per day regardless of how many times the workflow runs that day.
+
 ## Tests
 
 ```bash

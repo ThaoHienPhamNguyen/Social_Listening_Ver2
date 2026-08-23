@@ -5,8 +5,8 @@ import { load } from 'js-yaml';
 describe('.github/workflows/discovery-ingestion.yml', () => {
   const doc = load(readFileSync('.github/workflows/discovery-ingestion.yml', 'utf8')) as any;
 
-  it('defines both jobs', () => {
-    expect(Object.keys(doc.jobs)).toEqual(['discovery-ingest', 'rank-and-select']);
+  it('defines all three jobs', () => {
+    expect(Object.keys(doc.jobs)).toEqual(['discovery-ingest', 'rank-and-select', 'deep-crawl']);
   });
 
   it('gates rank-and-select on discovery-ingest via needs', () => {
