@@ -56,3 +56,22 @@ export interface CandidateTopic {
   created_at?: string;
   updated_at?: string;
 }
+
+export type DeepCrawlSourceName = 'threads';
+
+export interface TopicSocialData {
+  id?: string;
+  keyword: string;
+  source: DeepCrawlSourceName;
+  date: string;
+  post_url: string;
+  text_content: string;
+  like_count: number | null;
+  reply_count: number | null;
+  repost_count: number | null;
+  quote_count: number | null;
+  share_count: number | null;
+  view_count: number | null;
+  posted_at: string | null;
+  fetched_at?: string;
+}
