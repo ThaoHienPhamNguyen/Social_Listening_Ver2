@@ -21,6 +21,7 @@ erDiagram
         integer comment_count
         integer share_count
         timestamptz posted_at
+        text sentiment
         timestamptz fetched_at
     }
 ```
@@ -37,6 +38,7 @@ erDiagram
 | `text_content` | `text` | `not null default ''` | rỗng nếu actor trả sai kiểu, thay vì null vì cột `not null` |
 | `like_count` / `comment_count` / `share_count` | `integer` | nullable | engagement thô từ actor; `null` nếu actor không trả về hoặc trả sai kiểu (runtime-checked, không ép kiểu bằng `as`) |
 | `posted_at` | `timestamptz` | nullable | thời điểm đăng bài, `null` nếu actor không trả về hoặc trả sai kiểu |
+| `sentiment` | `text` | nullable, `check (sentiment in ('positive','negative','neutral'))` | phân loại bởi `classify-sentiment.ts` (sub-project 3), thêm ở migration `0006`. `NULL` = chưa phân loại. Xem [schema doc sub-project 3](./2026-08-23-sentiment-engagement-metrics-database-schema.md) |
 | `fetched_at` | `timestamptz` | `not null default now()` | thời điểm job ghi dòng này, không tự cập nhật khi upsert đè lên dòng cũ |
 
 Ràng buộc bổ sung: `unique (page_url, post_url)` — key dedup, `FacebookPageDataRepository.upsertPosts()` dùng `onConflict: 'page_url,post_url'`.

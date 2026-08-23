@@ -59,6 +59,8 @@ export interface CandidateTopic {
 
 export type DeepCrawlSourceName = 'threads';
 
+export type SentimentLabel = 'positive' | 'negative' | 'neutral';
+
 export interface TopicSocialData {
   id?: string;
   keyword: string;
@@ -73,6 +75,7 @@ export interface TopicSocialData {
   share_count: number | null;
   view_count: number | null;
   posted_at: string | null;
+  sentiment?: SentimentLabel | null;
   fetched_at?: string;
 }
 
@@ -87,5 +90,6 @@ export interface FacebookPageData {
   comment_count: number | null;
   share_count: number | null;
   posted_at: string | null;
+  sentiment?: SentimentLabel | null;
   fetched_at?: string;
 }

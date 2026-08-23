@@ -24,6 +24,7 @@ erDiagram
         integer share_count
         integer view_count
         timestamptz posted_at
+        text sentiment
         timestamptz fetched_at
     }
 ```
@@ -40,6 +41,7 @@ erDiagram
 | `text_content` | `text` | `not null default ''` | nội dung bài viết; rỗng nếu Apify trả về giá trị sai kiểu (xem `toStringOrDefault()` ở `apify-threads-client.ts`) thay vì null, vì cột `not null` |
 | `like_count` / `reply_count` / `repost_count` / `quote_count` / `share_count` / `view_count` | `integer` | nullable | 6 chỉ số engagement từ Apify actor; `null` nếu actor không trả về field đó hoặc trả sai kiểu (`toNumberOrNull()` validate runtime type thay vì ép kiểu bằng `as`, để 1 field sai kiểu không làm hỏng cả batch upsert — xem Known gaps ở doc thiết kế) |
 | `posted_at` | `timestamptz` | nullable | thời điểm đăng bài theo Threads, `null` nếu actor không trả về hoặc trả sai kiểu |
+| `sentiment` | `text` | nullable, `check (sentiment in ('positive','negative','neutral'))` | phân loại bởi `classify-sentiment.ts` (sub-project 3), thêm ở migration `0006`. `NULL` = chưa phân loại. Xem [schema doc sub-project 3](./2026-08-23-sentiment-engagement-metrics-database-schema.md) |
 | `fetched_at` | `timestamptz` | `not null default now()` | thời điểm job `deep-crawl` ghi dòng này, KHÔNG tự cập nhật lại khi upsert đè lên dòng cũ (không có trigger `set_updated_at`, khác `articles`/`candidate_topics` — bảng này không có khái niệm "cập nhật", mỗi `post_url` coi như bất biến sau khi ghi lần đầu) |
 
 Ràng buộc bổ sung: `unique (source, keyword, post_url)` — key dedup, `TopicSocialDataRepository.upsertPosts()` dùng `onConflict: 'source,keyword,post_url'`. Vì v1 chỉ có 1 `source` ('threads'), ràng buộc này trên thực tế tương đương `unique (keyword, post_url)` — giữ đủ 3 cột để nhất quán khi mở rộng thêm nguồn sau này.
