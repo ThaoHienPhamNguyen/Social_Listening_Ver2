@@ -5,12 +5,14 @@ import { load } from 'js-yaml';
 describe('.github/workflows/discovery-ingestion.yml', () => {
   const doc = load(readFileSync('.github/workflows/discovery-ingestion.yml', 'utf8')) as any;
 
-  it('defines all four jobs', () => {
+  it('defines all six jobs', () => {
     expect(Object.keys(doc.jobs)).toEqual([
       'discovery-ingest',
       'rank-and-select',
       'deep-crawl',
       'deep-crawl-facebook',
+      'classify-sentiment',
+      'aggregate-engagement',
     ]);
   });
 
@@ -55,5 +57,25 @@ describe('.github/workflows/discovery-ingestion.yml', () => {
       (s: any) => s.run === 'npm run deep-crawl-facebook'
     );
     expect(step?.env?.APIFY_TOKEN).toBe('${{ secrets.APIFY_TOKEN }}');
+  });
+
+  it('gates classify-sentiment and aggregate-engagement on both deep-crawl jobs via needs', () => {
+    expect(doc['jobs']['classify-sentiment']['needs']).toEqual(['deep-crawl', 'deep-crawl-facebook']);
+    expect(doc['jobs']['aggregate-engagement']['needs']).toEqual(['deep-crawl', 'deep-crawl-facebook']);
+  });
+
+  it('runs classify-sentiment and aggregate-engagement even if an earlier job failed, as long as it was not cancelled', () => {
+    expect(doc['jobs']['classify-sentiment']['if']).toBe('${{ !cancelled() }}');
+    expect(doc['jobs']['aggregate-engagement']['if']).toBe('${{ !cancelled() }}');
+  });
+
+  it('passes OPENAI_API_KEY through to the classify-sentiment job', () => {
+    const step = doc['jobs']['classify-sentiment']['steps'].find((s: any) => s.run === 'npm run classify-sentiment');
+    expect(step?.env?.OPENAI_API_KEY).toBe('${{ secrets.OPENAI_API_KEY }}');
+  });
+
+  it('does not require a new secret for aggregate-engagement beyond Supabase', () => {
+    const step = doc['jobs']['aggregate-engagement']['steps'].find((s: any) => s.run === 'npm run aggregate-engagement');
+    expect(Object.keys(step?.env ?? {})).toEqual(['SUPABASE_URL', 'SUPABASE_SERVICE_KEY']);
   });
 });
