@@ -49,6 +49,19 @@ Setup: apply `supabase/migrations/0004_add_topic_social_data.sql` (after `0001`-
 
 Scoped to Threads only — Facebook and TikTok are deliberately out of scope, see the design spec §7/§8 for why. Runs as a 3rd job in `discovery-ingestion.yml`, guarded by an idempotency check (skips if `topic_social_data` already has rows for today) rather than a hardcoded run time, so it only spends Apify budget once per day regardless of how many times the workflow runs that day.
 
+## Deep-crawl Facebook (sub-project 2c)
+
+```bash
+export SUPABASE_URL=...
+export SUPABASE_SERVICE_KEY=...
+export APIFY_TOKEN=...
+npm run deep-crawl-facebook   # crawls 6 hard-coded Facebook Pages (2/category) -> facebook_page_data
+```
+
+Setup: apply `supabase/migrations/0005_add_facebook_page_data.sql` (after `0001`-`0004`). No new GitHub secret needed — reuses the existing `APIFY_TOKEN` from sub-project 2b.
+
+Uses `apify/facebook-posts-scraper` against a small hard-coded seed list (`src/lib/facebook-seed-pages.ts`), not keyword search — Facebook's actor only accepts specific Page URLs, unlike Threads. Runs as its own job in `discovery-ingestion.yml`, independent of `candidate_topics`/the other 3 jobs (no `needs:`), guarded by the same per-day idempotency check as `deep-crawl`. Deliberately small/exploratory scale (`MAX_POSTS_PER_PAGE=15`, 6 pages) to measure real cost/reliability before deciding whether to scale up — see `docs/superpowers/specs/2026-08-23-deep-crawl-facebook-design.md` §5.
+
 ## Tests
 
 ```bash
@@ -70,4 +83,6 @@ The dashboard (sub-project 4, `dashboard/`) is **live on Vercel since 2026-08-22
 - Feed URLs in `config/sources.config.ts` were verified live on 2026-08-20; re-check if ingestion starts silently returning 0 items for a source.
 - RLS is enabled on `articles` with no policies — intentionally deferred until a real anon-key consumer exists. The dashboard (sub-project 4) reads via the **service_role** key server-side by design (never the anon key — see `dashboard/lib/supabase.ts`), so it does not trigger this yet. See the database schema doc for details.
 - RLS is enabled on `candidate_topics` with no policies — same status as `articles`, see the discovery layer schema doc for details and other known limitations.
-- Migration `0004_add_topic_social_data.sql` is **not yet applied** to production and the `APIFY_TOKEN` secret is **not yet added** to the GitHub repo — until a human does both, the `deep-crawl` job will fail every cron run (isolated failure via `if: ${{ !cancelled() }}`, but red 3x/day until fixed). See `docs/superpowers/specs/2026-08-23-deep-crawl-threads-database-schema.md` for the schema.
+- Migration `0004_add_topic_social_data.sql` is applied to production and the `deep-crawl` job (Threads) is live-verified via a real `workflow_dispatch` run (`topicsSelected=8 postsUpserted=400 errors=0`). See `docs/superpowers/specs/2026-08-23-deep-crawl-threads-database-schema.md` for the schema.
+- Migration `0005_add_facebook_page_data.sql` is **not yet applied** to production — until a human applies it, the `deep-crawl-facebook` job will fail every cron run (isolated failure via `if: ${{ !cancelled() }}`, but red until fixed). No new secret needed (reuses `APIFY_TOKEN`). See `docs/superpowers/specs/2026-08-23-deep-crawl-facebook-database-schema.md` for the schema.
+- The 6 Facebook Page URLs in `src/lib/facebook-seed-pages.ts` were picked without a live browser check in this session — confirm they still resolve to real, active Pages if the `deep-crawl-facebook` job logs `no_items`/`not_available` errors for all 6 on its first live run.
