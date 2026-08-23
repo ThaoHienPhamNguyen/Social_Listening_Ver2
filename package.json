@@ -14,7 +14,8 @@
     "discover": "tsx src/run-discovery-ingest.ts",
     "rank": "tsx src/run-rank-and-select.ts",
     "deep-crawl": "tsx src/run-deep-crawl.ts",
-    "deep-crawl-facebook": "tsx src/run-deep-crawl-facebook.ts"
+    "deep-crawl-facebook": "tsx src/run-deep-crawl-facebook.ts",
+    "classify-sentiment": "tsx src/run-classify-sentiment.ts"
   },
   "dependencies": {
     "@alkalisummer/google-trends-js": "^0.3.7",
