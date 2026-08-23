@@ -40,4 +40,12 @@ export const sources: RssSource[] = [
   // Finance-only publishers — no giai_tri/du_lich section exists on these sites.
   { id: 'cafef-tai-chinh', name: 'CafeF - Tài chính, Ngân hàng', url: 'https://cafef.vn/tai-chinh-ngan-hang.rss', defaultCategory: 'tai_chinh' },
   { id: 'vneconomy-tai-chinh', name: 'VnEconomy - Tài chính', url: 'https://vneconomy.vn/tai-chinh.rss', defaultCategory: 'tai_chinh' },
+
+  // Kenh14's giai_tri feed is "star" (showbiz) — chosen over its sibling
+  // cine/musik/beauty-fashion feeds to match the one-feed-per-category
+  // convention above; "an-choi-di" ("Eat - Play - Go") is genuinely travel
+  // content, not culture/lifestyle like VOV/Nhân Dân/VietnamPlus's giai_tri.
+  { id: 'kenh14-tai-chinh', name: 'Kenh14 - Money14', url: 'https://kenh14.vn/rss/money14.rss', defaultCategory: 'tai_chinh' },
+  { id: 'kenh14-giai-tri', name: 'Kenh14 - Star', url: 'https://kenh14.vn/rss/star.rss', defaultCategory: 'giai_tri' },
+  { id: 'kenh14-du-lich', name: 'Kenh14 - Ăn Chơi Đi', url: 'https://kenh14.vn/rss/an-choi-di.rss', defaultCategory: 'du_lich' },
 ];

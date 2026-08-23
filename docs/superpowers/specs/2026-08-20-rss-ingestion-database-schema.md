@@ -54,9 +54,9 @@ erDiagram
 
 `alter table articles enable row level security;` — **bật nhưng chưa có policy nào**. An toàn ở giai đoạn hiện tại vì toàn bộ ghi/đọc đều qua `service_role` key (bypass RLS) trong GitHub Actions; chặn hoàn toàn mọi truy cập qua `anon`/`publishable` key cho tới khi có policy — cần nhớ thêm policy nếu sau này dashboard (sub-project 4) đọc trực tiếp từ Supabase bằng key public.
 
-## Nguồn RSS (`config/sources.config.ts`) — 8 báo, 26 feed
+## Nguồn RSS (`config/sources.config.ts`) — 9 báo, 29 feed
 
-Đây là toàn bộ nguồn ghi vào `source_id`/`categories` của bảng `articles`. Danh sách này verify live lần cuối 2026-08-20 — báo có thể đổi đường dẫn feed theo thời gian, cần re-check nếu một nguồn tự nhiên trả về 0 bài.
+Đây là toàn bộ nguồn ghi vào `source_id`/`categories` của bảng `articles`. Danh sách này verify live lần cuối 2026-08-23 (Kenh14 thêm ngày này; các nguồn còn lại verify lần cuối 2026-08-20) — báo có thể đổi đường dẫn feed theo thời gian, cần re-check nếu một nguồn tự nhiên trả về 0 bài.
 
 | Nguồn | tài chính | giải trí | du lịch |
 |---|---|---|---|
@@ -70,6 +70,9 @@ erDiagram
 | VOV | [kinh-te.rss](https://vov.vn/rss/kinh-te.rss) | [van-hoa.rss](https://vov.vn/rss/van-hoa.rss) ⚠️ | [du-lich.rss](https://vov.vn/rss/du-lich.rss) |
 | CafeF | [tai-chinh-ngan-hang.rss](https://cafef.vn/tai-chinh-ngan-hang.rss) | — | — |
 | VnEconomy | [tai-chinh.rss](https://vneconomy.vn/tai-chinh.rss) | — | — |
+| Kenh14 | [money14.rss](https://kenh14.vn/rss/money14.rss) | [star.rss](https://kenh14.vn/rss/star.rss) | [an-choi-di.rss](https://kenh14.vn/rss/an-choi-di.rss) |
+
+Kenh14 thêm 2026-08-23: cả 3 feed match category rõ ràng, không cần cảnh báo ⚠️ như Nhân Dân/VietnamPlus/VOV — `money14` là nội dung tài chính/tiêu dùng thật (chứng khoán, vàng, ngân hàng), `star` là showbiz đúng nghĩa "giải trí", `an-choi-di` ("Ăn - Chơi - Đi") là nội dung du lịch thật. Kenh14 còn nhiều feed giải trí khác (`cine`, `musik`, `beauty-fashion`) nhưng chỉ chọn `star` làm đại diện, theo đúng convention 1-feed/category/nguồn ở trên.
 
 ⚠️ Nhân Dân/VietnamPlus/VOV không có mục "giải trí"/showbiz riêng — feed dùng ở cột này là mục **Văn hóa** (triển lãm, di sản, biểu diễn), khác tính chất celebrity-news của các nguồn giải trí còn lại. Từ khoá category hiện tại (`ca sĩ`, `MV`, `hoa hậu`...) có thể match ít với nội dung này hơn hẳn so với VnExpress/Dân Trí. CafeF và VnEconomy là báo chuyên tài chính, không có mục giải trí/du lịch nên chỉ thêm 1 category.
 
