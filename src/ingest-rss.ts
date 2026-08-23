@@ -2,6 +2,7 @@ import type { RssSource, Article } from './types';
 import type { ArticleRepository } from './lib/article-repository';
 import type { FeedFetcher } from './lib/rss-fetcher';
 import { categorize } from './lib/categorize';
+import { decodeHtmlEntities } from './lib/decode-html-entities';
 
 export interface IngestDeps {
   fetcher: FeedFetcher;
@@ -32,12 +33,16 @@ export async function ingestSource(source: RssSource, deps: IngestDeps): Promise
   for (const item of items) {
     if (!item.link || !item.title || !/^https?:\/\//i.test(item.link)) continue;
 
-    const snippet = item.contentSnippet ?? item.content ?? '';
-    const categories = categorize(source.defaultCategory, `${item.title} ${snippet}`);
+    // Some publisher feeds (e.g. Thanh Niên) encode Vietnamese diacritics as
+    // named HTML entities (&ecirc;, &ocirc;...) that aren't valid XML
+    // entities, so rss-parser's XML parser leaves them un-resolved.
+    const title = decodeHtmlEntities(item.title);
+    const snippet = decodeHtmlEntities(item.contentSnippet ?? item.content ?? '');
+    const categories = categorize(source.defaultCategory, `${title} ${snippet}`);
 
     const article: Partial<Article> = {
       url: item.link,
-      title: item.title,
+      title,
       published_at: item.isoDate ?? new Date().toISOString(),
       source_id: source.id,
       categories,

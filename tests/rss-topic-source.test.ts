@@ -16,7 +16,7 @@ describe('RssTopicSource', () => {
     const candidates = await source.fetchCandidates();
 
     expect(source.name).toBe('rss');
-    expect(candidates.some((c) => c.keyword === 'vàng')).toBe(true);
+    expect(candidates.some((c) => c.keyword === 'giá vàng')).toBe(true);
   });
 
   it('requests only 1 day of lookback, so metric_value reflects that day only (not a multi-day rolling window)', async () => {

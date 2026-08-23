@@ -9,18 +9,18 @@ describe('aggregateRssKeywords', () => {
   it('counts how many titles each keyword appears in', () => {
     const result = aggregateRssKeywords([
       article('Giá vàng tăng mạnh'),
-      article('Vàng lập đỉnh mới'),
+      article('Giá vàng lập đỉnh mới'),
       article('Chứng khoán giảm'),
     ]);
-    const vang = result.find((r) => r.keyword === 'vàng');
-    expect(vang).toBeDefined();
-    expect(vang!.metric_value).toBe(2);
+    const giaVang = result.find((r) => r.keyword === 'giá vàng');
+    expect(giaVang).toBeDefined();
+    expect(giaVang!.metric_value).toBe(2);
   });
 
   it('counts a keyword at most once per title even if it repeats within that title', () => {
     const result = aggregateRssKeywords([article('vàng vàng vàng')]);
-    const vang = result.find((r) => r.keyword === 'vàng');
-    expect(vang!.metric_value).toBe(1);
+    const vangVang = result.find((r) => r.keyword === 'vàng vàng');
+    expect(vangVang!.metric_value).toBe(1);
   });
 
   it('leaves growth_rate null for every keyword', () => {

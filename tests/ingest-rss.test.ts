@@ -37,6 +37,24 @@ describe('ingestSource', () => {
     });
   });
 
+  it('decodes HTML entities left un-resolved by the XML parser in title and snippet', async () => {
+    const repo = new FakeArticleRepository();
+    const fetcher = fakeFetcher([
+      {
+        link: 'https://example.com/1',
+        title: 'Kh&ocirc;i c&ocirc;ng khu c&#259;n h&#7897;',
+        contentSnippet: 'Tin t&uacute;c &ecirc;m &#273;ềm',
+        isoDate: '2026-08-20T00:00:00Z',
+      },
+    ]);
+
+    const result = await ingestSource(source, { fetcher, repo });
+
+    expect(result.errors).toEqual([]);
+    expect(repo.articles[0].title).toBe('Khôi công khu căn hộ');
+    expect(repo.articles[0].snippet).toBe('Tin túc êm đềm');
+  });
+
   it('skips items missing a link or a title', async () => {
     const repo = new FakeArticleRepository();
     const fetcher = fakeFetcher([

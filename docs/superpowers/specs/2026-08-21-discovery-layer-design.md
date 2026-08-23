@@ -76,7 +76,7 @@ Index: btree trên `(source, keyword, date)` (unique — 1 dòng/nguồn/từ kh
 Hàm thuần, test được (TDD), không dùng NLP/AI ngoài — giữ đúng tinh thần đơn giản của `categorize()`:
 1. Tách từ theo khoảng trắng/dấu câu.
 2. Bỏ stop-word tiếng Việt (danh sách nhỏ viết tay, tương tự cách `categories.config.ts` liệt kê từ khoá).
-3. Giữ lại cụm 1-2 từ có độ dài > 2 ký tự.
+3. Giữ lại cụm 2 từ liền kề có độ dài > 2 ký tự mỗi từ. (Đổi từ "cụm 1-2 từ" ban đầu — bỏ hẳn từ đơn 2026-08-23 vì từ đơn chung chung/từ lóng lấn át cụm có nghĩa trong shortlist theo tần suất thô; xem "Known gaps" trong schema doc.)
 4. Trả về danh sách từ khoá (có thể trùng lặp — bên gọi tự đếm tần suất).
 
 ## 6. Thuật toán rank-and-select (Job B)
