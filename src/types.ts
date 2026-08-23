@@ -93,3 +93,29 @@ export interface FacebookPageData {
   sentiment?: SentimentLabel | null;
   fetched_at?: string;
 }
+
+export interface ThreadsEngagementDaily {
+  id?: string;
+  date: string;
+  keyword: string;
+  category: Category | null;
+  total_like_count: number;
+  total_reply_count: number;
+  total_repost_count: number;
+  total_quote_count: number;
+  total_share_count: number;
+  total_view_count: number;
+  post_count: number;
+  computed_at?: string;
+}
+
+export interface FacebookEngagementDaily {
+  id?: string;
+  date: string;
+  category: Category;
+  total_like_count: number;
+  total_comment_count: number;
+  total_share_count: number;
+  post_count: number;
+  computed_at?: string;
+}
