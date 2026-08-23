@@ -75,3 +75,17 @@ export interface TopicSocialData {
   posted_at: string | null;
   fetched_at?: string;
 }
+
+export interface FacebookPageData {
+  id?: string;
+  page_url: string;
+  category: Category;
+  date: string;
+  post_url: string;
+  text_content: string;
+  like_count: number | null;
+  comment_count: number | null;
+  share_count: number | null;
+  posted_at: string | null;
+  fetched_at?: string;
+}
