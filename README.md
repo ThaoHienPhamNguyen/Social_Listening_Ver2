@@ -34,7 +34,7 @@ Sources: Google Trends (`@alkalisummer/google-trends-js`, unofficial but verifie
 
 Schedule: `discovery-ingestion.yml` runs 1 hour after `rss-ingestion.yml` (09:00/12:00/21:00 ICT vs. 08:00/11:00/20:00 ICT) so it never reads the `articles` table while `ingest-rss` is mid-write and doesn't contend with it for GitHub Actions runners — see the schedule comment in the workflow file.
 
-This produces a `candidate_topics` shortlist for the future Apify deep-crawl layer (sub-project 2b, not yet built) to consume — this sub-project does not call Apify.
+This produces a `candidate_topics` shortlist for the Apify deep-crawl layer (sub-project 2b, see below) to consume — this sub-project (2a) does not call Apify itself.
 
 ## Deep-crawl Threads (sub-project 2b v1)
 
@@ -70,3 +70,4 @@ The dashboard (sub-project 4, `dashboard/`) is **live on Vercel since 2026-08-22
 - Feed URLs in `config/sources.config.ts` were verified live on 2026-08-20; re-check if ingestion starts silently returning 0 items for a source.
 - RLS is enabled on `articles` with no policies — intentionally deferred until a real anon-key consumer exists. The dashboard (sub-project 4) reads via the **service_role** key server-side by design (never the anon key — see `dashboard/lib/supabase.ts`), so it does not trigger this yet. See the database schema doc for details.
 - RLS is enabled on `candidate_topics` with no policies — same status as `articles`, see the discovery layer schema doc for details and other known limitations.
+- Migration `0004_add_topic_social_data.sql` is **not yet applied** to production and the `APIFY_TOKEN` secret is **not yet added** to the GitHub repo — until a human does both, the `deep-crawl` job will fail every cron run (isolated failure via `if: ${{ !cancelled() }}`, but red 3x/day until fixed). See `docs/superpowers/specs/2026-08-23-deep-crawl-threads-database-schema.md` for the schema.

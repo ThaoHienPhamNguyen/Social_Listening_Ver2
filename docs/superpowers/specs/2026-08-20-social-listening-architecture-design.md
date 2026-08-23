@@ -123,12 +123,14 @@ Một topic có thể thuộc nhiều danh mục cùng lúc (multi-category). Kh
 
 | Thông số | Giá trị |
 |---|---|
-| Trần chi phí Apify | < $30/tháng (chia sẻ giữa FB/Threads/TikTok) |
+| Trần chi phí Apify | < $30/tháng (chia sẻ giữa FB/Threads/TikTok) [^2b-override] |
 | Tần suất chạy pipeline | 2–3 lần/ngày |
-| Số topic deep-crawl/ngày | ~10–15 (shortlist sau discovery) |
+| Số topic deep-crawl/ngày | ~10–15 (shortlist sau discovery) [^2b-override] |
 | Nền tảng discovery (miễn phí) | RSS, Google Trends, YouTube Data API, TikTok Creative Center, Reddit API |
 | Nền tảng deep-crawl (Apify, trả phí) | Facebook, Threads, TikTok |
 | Hạ tầng | GitHub Actions (compute) + Supabase (lưu trữ) + Vercel (dashboard read-only) |
+
+[^2b-override]: **Đã supersede bởi sub-project 2b v1** (2026-08-23, xem [2026-08-23-deep-crawl-threads-design.md](./2026-08-23-deep-crawl-threads-design.md) §6-§7): dựa trên giá Apify đo thật (chỉ Threads, Facebook/TikTok chưa build), con số đã chốt lại thành **~$39/tháng** (vượt trần gốc ~30%, đánh đổi có chủ đích để giữ 50 bài/topic) và **8 topic/ngày** (không phải 10-15, hard-cap theo ngân sách cố định). Số liệu gốc trong bảng trên vẫn giữ nguyên làm mục tiêu lịch sử ban đầu, không xoá.
 
 ## 7. Ngoài phạm vi (deferred có chủ đích)
 

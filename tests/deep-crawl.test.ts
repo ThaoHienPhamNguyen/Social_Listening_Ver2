@@ -130,7 +130,7 @@ describe('runDeepCrawl', () => {
     expect(result.postsUpserted).toBe(0);
   });
 
-  it('returns 0 topics and makes no client calls when nothing is shortlisted today', async () => {
+  it('returns 0 topics and makes no client calls when there are no candidates at all today', async () => {
     const candidateRepo = new FakeCandidateTopicRepository();
     const socialRepo = new FakeTopicSocialDataRepository();
     const client = new FakeThreadsSearchClient();
@@ -139,5 +139,36 @@ describe('runDeepCrawl', () => {
 
     expect(result.topicsSelected).toBe(0);
     expect(client.calls).toEqual([]);
+  });
+
+  it('returns 0 topics and makes no client calls when candidates exist but none are shortlisted', async () => {
+    const candidateRepo = new FakeCandidateTopicRepository();
+    candidateRepo.candidates.push(
+      candidate({ keyword: 'bitcoin', date: '2026-08-23', growth_rate: 10, is_shortlisted: false }),
+      candidate({ keyword: 'vang', date: '2026-08-23', growth_rate: 5, is_shortlisted: false })
+    );
+    const socialRepo = new FakeTopicSocialDataRepository();
+    const client = new FakeThreadsSearchClient();
+
+    const result = await runDeepCrawl({ candidateRepo, socialRepo, client, now: NOW });
+
+    expect(result.topicsSelected).toBe(0);
+    expect(client.calls).toEqual([]);
+  });
+
+  it('calls the client at most 8 times when more than 8 candidates are shortlisted', async () => {
+    const candidateRepo = new FakeCandidateTopicRepository();
+    for (let i = 0; i < 10; i++) {
+      candidateRepo.candidates.push(
+        candidate({ keyword: `topic-${i}`, date: '2026-08-23', growth_rate: 10 - i })
+      );
+    }
+    const socialRepo = new FakeTopicSocialDataRepository();
+    const client = new FakeThreadsSearchClient();
+
+    const result = await runDeepCrawl({ candidateRepo, socialRepo, client, now: NOW });
+
+    expect(result.topicsSelected).toBeLessThanOrEqual(8);
+    expect(client.calls.length).toBeLessThanOrEqual(8);
   });
 });

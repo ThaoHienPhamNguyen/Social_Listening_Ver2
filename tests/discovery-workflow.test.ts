@@ -23,4 +23,17 @@ describe('.github/workflows/discovery-ingestion.yml', () => {
     const step = doc['jobs']['discovery-ingest']['steps'].find((s: any) => s.run === 'npm run discover');
     expect(step?.env?.OPENAI_API_KEY).toBe('${{ secrets.OPENAI_API_KEY }}');
   });
+
+  it('gates deep-crawl on both discovery-ingest and rank-and-select via needs', () => {
+    expect(doc['jobs']['deep-crawl']['needs']).toEqual(['discovery-ingest', 'rank-and-select']);
+  });
+
+  it('runs deep-crawl even if an earlier job failed, as long as it was not cancelled', () => {
+    expect(doc['jobs']['deep-crawl']['if']).toBe('${{ !cancelled() }}');
+  });
+
+  it('passes APIFY_TOKEN through to the deep-crawl job', () => {
+    const step = doc['jobs']['deep-crawl']['steps'].find((s: any) => s.run === 'npm run deep-crawl');
+    expect(step?.env?.APIFY_TOKEN).toBe('${{ secrets.APIFY_TOKEN }}');
+  });
 });

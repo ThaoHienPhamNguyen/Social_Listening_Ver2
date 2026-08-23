@@ -27,6 +27,14 @@ export async function runDeepCrawl(deps: DeepCrawlDeps): Promise<DeepCrawlResult
   // cron" — robust against cron schedule changes and repeated
   // workflow_dispatch runs, which would otherwise double-spend Apify budget
   // for the same day. See design spec §5.
+  //
+  // Note on actual semantics: this checks "has data been WRITTEN today", not
+  // "has this job RUN today". If every topic in a run fails/times out and
+  // zero rows get upserted, the next cron re-attempts from scratch and
+  // re-spends Apify budget on the same topics. This is a deliberate
+  // self-healing/re-spend tradeoff the design accepts — now bounded by a
+  // fixed per-call timeout (see FETCH_TIMEOUT_MS in apify-threads-client.ts)
+  // rather than left open-ended.
   const alreadyRan = await deps.socialRepo.hasDataForDate(date);
   if (alreadyRan) {
     result.skipped = true;
@@ -40,11 +48,21 @@ export async function runDeepCrawl(deps: DeepCrawlDeps): Promise<DeepCrawlResult
   for (const keyword of topics) {
     try {
       const posts = await deps.client.searchByKeyword(keyword);
-      const rows: Partial<TopicSocialData>[] = posts.map((post) => ({
+      // Dedupe by post_url before upserting: every row in this batch shares
+      // (source, keyword), so a duplicated post_url from the Apify actor
+      // would make two rows collide on the same unique(source,keyword,post_url)
+      // conflict key within a single upsert statement — Postgres rejects the
+      // ENTIRE statement ("ON CONFLICT DO UPDATE command cannot affect row a
+      // second time"), losing all rows for this topic after the Apify charge
+      // is already paid.
+      const dedupedPosts = [...new Map(posts.map((p) => [p.post_url, p])).values()];
+      // Spread ...post first so keyword/source/date (set by this job, not
+      // the actor) can't be silently overwritten by a future ThreadsPost field.
+      const rows: Partial<TopicSocialData>[] = dedupedPosts.map((post) => ({
+        ...post,
         keyword,
         source: 'threads',
         date,
-        ...post,
       }));
       const { error, count } = await deps.socialRepo.upsertPosts(rows);
       if (error) {
