@@ -5,8 +5,13 @@ import { load } from 'js-yaml';
 describe('.github/workflows/discovery-ingestion.yml', () => {
   const doc = load(readFileSync('.github/workflows/discovery-ingestion.yml', 'utf8')) as any;
 
-  it('defines all three jobs', () => {
-    expect(Object.keys(doc.jobs)).toEqual(['discovery-ingest', 'rank-and-select', 'deep-crawl']);
+  it('defines all four jobs', () => {
+    expect(Object.keys(doc.jobs)).toEqual([
+      'discovery-ingest',
+      'rank-and-select',
+      'deep-crawl',
+      'deep-crawl-facebook',
+    ]);
   });
 
   it('gates rank-and-select on discovery-ingest via needs', () => {
@@ -34,6 +39,21 @@ describe('.github/workflows/discovery-ingestion.yml', () => {
 
   it('passes APIFY_TOKEN through to the deep-crawl job', () => {
     const step = doc['jobs']['deep-crawl']['steps'].find((s: any) => s.run === 'npm run deep-crawl');
+    expect(step?.env?.APIFY_TOKEN).toBe('${{ secrets.APIFY_TOKEN }}');
+  });
+
+  it('runs deep-crawl-facebook independently of the discovery layer (no needs)', () => {
+    expect(doc['jobs']['deep-crawl-facebook']['needs']).toBeUndefined();
+  });
+
+  it('runs deep-crawl-facebook even if an earlier job failed, as long as it was not cancelled', () => {
+    expect(doc['jobs']['deep-crawl-facebook']['if']).toBe('${{ !cancelled() }}');
+  });
+
+  it('passes APIFY_TOKEN through to the deep-crawl-facebook job', () => {
+    const step = doc['jobs']['deep-crawl-facebook']['steps'].find(
+      (s: any) => s.run === 'npm run deep-crawl-facebook'
+    );
     expect(step?.env?.APIFY_TOKEN).toBe('${{ secrets.APIFY_TOKEN }}');
   });
 });
