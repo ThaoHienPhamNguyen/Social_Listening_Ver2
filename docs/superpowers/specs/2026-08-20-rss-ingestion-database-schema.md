@@ -76,6 +76,8 @@ Kenh14 thêm 2026-08-23: cả 3 feed match category rõ ràng, không cần cả
 
 ⚠️ Nhân Dân/VietnamPlus/VOV không có mục "giải trí"/showbiz riêng — feed dùng ở cột này là mục **Văn hóa** (triển lãm, di sản, biểu diễn), khác tính chất celebrity-news của các nguồn giải trí còn lại. Từ khoá category hiện tại (`ca sĩ`, `MV`, `hoa hậu`...) có thể match ít với nội dung này hơn hẳn so với VnExpress/Dân Trí. CafeF và VnEconomy là báo chuyên tài chính, không có mục giải trí/du lịch nên chỉ thêm 1 category.
 
+**Đã fix (2026-08-23):** Nhân Dân và VietnamPlus khiến `ingest-rss` fail liên tục mọi lần cron (3 lần/ngày) — cả 2 domain gzip-nén response RSS **vô điều kiện**, bất kể client có gửi `Accept-Encoding: gzip` hay không. `rss-parser`'s `parseURL()` tự fetch qua `http`/`https.get` thô, không giải nén — coi bytes gzip là text UTF-8, ra dữ liệu rác khiến XML parser lỗi ("Non-whitespace before first tag"/"Unable to parse XML"). Fix: `RssParserFetcher` (`src/lib/rss-fetcher.ts`) giờ tự fetch bằng `fetch()` gốc (tự giải nén gzip/deflate/br) rồi đưa text đã decode cho `parser.parseString()` — không dùng `parseURL()` của thư viện nữa, chỉ dùng phần parse XML (không có vấn đề). Verify bằng feed thật: cả 2 domain parse thành công (50 items/feed).
+
 **Đã kiểm tra nhưng không thêm:**
 - **Báo Mới** (baomoi.com) — không tìm thấy RSS; là trang tổng hợp, re-publish lại nội dung từ các báo gốc đã có sẵn ở trên.
 - **Báo Chính phủ** (baochinhphu.vn) — chỉ có 1 feed "home" gộp chung, không tách category; nội dung là văn bản chỉ đạo/pháp quy.
