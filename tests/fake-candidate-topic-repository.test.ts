@@ -64,6 +64,17 @@ describe('FakeCandidateTopicRepository', () => {
     expect(repo.candidates[1].is_shortlisted).toBe(false);
   });
 
+  it('resetShortlisted sets is_shortlisted false for every row on the given date, leaving other dates untouched', async () => {
+    const repo = new FakeCandidateTopicRepository();
+    repo.candidates.push(
+      { id: '1', source: 'youtube', keyword: 'a', date: '2026-08-21', metric_value: 1, growth_rate: null, category_hint: [], is_shortlisted: true },
+      { id: '2', source: 'youtube', keyword: 'b', date: '2026-08-20', metric_value: 1, growth_rate: null, category_hint: [], is_shortlisted: true }
+    );
+    await repo.resetShortlisted('2026-08-21');
+    expect(repo.candidates[0].is_shortlisted).toBe(false);
+    expect(repo.candidates[1].is_shortlisted).toBe(true);
+  });
+
   it('upsertCandidates adds every candidate in the batch in one call', async () => {
     const repo = new FakeCandidateTopicRepository();
     const { error, count } = await repo.upsertCandidates([

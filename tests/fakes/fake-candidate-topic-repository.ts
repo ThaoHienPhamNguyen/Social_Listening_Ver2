@@ -69,4 +69,11 @@ export class FakeCandidateTopicRepository implements CandidateTopicRepository {
     }
     return { error: null };
   }
+
+  async resetShortlisted(date: string) {
+    for (const c of this.candidates) {
+      if (c.date === date) c.is_shortlisted = false;
+    }
+    return { error: null };
+  }
 }

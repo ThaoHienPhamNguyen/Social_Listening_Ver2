@@ -19,6 +19,12 @@ export interface CandidateTopicRepository {
   ): Promise<number[]>;
   updateGrowthRate(id: string, growthRate: number): Promise<{ error: string | null }>;
   markShortlisted(ids: string[]): Promise<{ error: string | null }>;
+  // rank-and-select runs 3x/day; without this, is_shortlisted only ever gets
+  // set true and never cleared, so a keyword that won an earlier run's top-N
+  // today but misses this run's stays flagged — accumulating well past
+  // topPerSource per source/day. Called once per run, before recomputing the
+  // shortlist, so each run reflects only its own top-N.
+  resetShortlisted(date: string): Promise<{ error: string | null }>;
 }
 
 export class SupabaseCandidateTopicRepository implements CandidateTopicRepository {
@@ -84,6 +90,15 @@ export class SupabaseCandidateTopicRepository implements CandidateTopicRepositor
       .from('candidate_topics')
       .update({ is_shortlisted: true })
       .in('id', ids);
+    return { error: error?.message ?? null };
+  }
+
+  async resetShortlisted(date: string) {
+    const { error } = await this.client
+      .from('candidate_topics')
+      .update({ is_shortlisted: false })
+      .eq('date', date)
+      .eq('is_shortlisted', true);
     return { error: error?.message ?? null };
   }
 }

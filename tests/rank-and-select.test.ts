@@ -197,6 +197,32 @@ describe('rankAndSelect', () => {
     expect(taiChinh.is_shortlisted).toBe(true);
   });
 
+  it('resets is_shortlisted to false for a stale winner from an earlier run today that misses the new top-N', async () => {
+    // Simulates the 3x/day cron: an earlier run today already marked 'stale'
+    // shortlisted, but this run's fresh growth_rate ranking no longer picks it.
+    const repo = new FakeCandidateTopicRepository();
+    repo.candidates.push(
+      candidate({ id: 'stale', source: 'google_trends', keyword: 'stale', growth_rate: 1, is_shortlisted: true }),
+      candidate({ id: 'fresh', source: 'google_trends', keyword: 'fresh', growth_rate: 5, is_shortlisted: false })
+    );
+
+    await rankAndSelect({ repo, now: NOW }, { topPerSource: 1 });
+
+    expect(repo.candidates.find((c) => c.id === 'stale')!.is_shortlisted).toBe(false);
+    expect(repo.candidates.find((c) => c.id === 'fresh')!.is_shortlisted).toBe(true);
+  });
+
+  it('does not reset is_shortlisted for a different date', async () => {
+    const repo = new FakeCandidateTopicRepository();
+    repo.candidates.push(
+      candidate({ id: 'yesterday', date: '2026-08-20', is_shortlisted: true })
+    );
+
+    await rankAndSelect({ repo, now: NOW });
+
+    expect(repo.candidates.find((c) => c.id === 'yesterday')!.is_shortlisted).toBe(true);
+  });
+
   it('does not shortlist a candidate with no category_hint just because same-source candidates elsewhere fill a category top-10', async () => {
     const repo = new FakeCandidateTopicRepository();
     // Today's candidates (date='2026-08-21')

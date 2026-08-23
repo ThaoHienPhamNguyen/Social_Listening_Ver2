@@ -31,6 +31,13 @@ export async function rankAndSelect(deps: RankDeps, options: RankOptions = {}): 
 
   const candidates = await deps.repo.getTodayCandidates(today);
 
+  // Clear today's stale winners before recomputing — without this, a keyword
+  // that won an earlier run's top-N today but misses this run's stays
+  // flagged forever (is_shortlisted is otherwise only ever set, never
+  // cleared), accumulating well past topPerSource per source across the
+  // day's several cron runs.
+  await deps.repo.resetShortlisted(today);
+
   for (const candidate of candidates) {
     // Only Google Trends supplies growth_rate at the source level — that value
     // must never be touched. YouTube/RSS always fetch with growth_rate: null,
