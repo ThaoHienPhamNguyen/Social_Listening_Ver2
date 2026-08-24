@@ -3,11 +3,16 @@ import { SupabaseCandidateTopicsReader } from '../lib/candidate-topics-reader';
 import { SupabaseArticlesReader } from '../lib/articles-reader';
 import { SupabaseThreadsEngagementReader } from '../lib/threads-engagement-reader';
 import { SupabaseThreadsSentimentReader } from '../lib/threads-sentiment-reader';
+import { SupabaseFacebookEngagementReader } from '../lib/facebook-engagement-reader';
+import { SupabaseFacebookSentimentReader } from '../lib/facebook-sentiment-reader';
 import { getHotTopics, type HotTopicsResult } from '../lib/get-hot-topics';
 import { enrichHotTopicsWithThreadsData } from '../lib/get-topic-engagement';
 import { withoutEngagement } from '../lib/topic-engagement';
+import { getOverviewMetrics } from '../lib/get-overview-metrics';
+import type { OverviewMetrics, DonutSegment } from '../lib/overview-metrics';
 import { HotTopicsSection } from '../components/HotTopicsSection';
 import { ArticlesSection } from '../components/ArticlesSection';
+import { OverviewMetricsSection } from '../components/OverviewMetricsSection';
 import { Topbar } from '../components/layout/Topbar';
 import type { Article, CandidateTopic } from '../lib/types';
 import type { HotTopicRow } from '../lib/hot-topics';
@@ -34,10 +39,10 @@ async function loadArticles(): Promise<Article[] | { error: string }> {
   }
 }
 
-// Errors/missing data here are swallowed on purpose (spec §5): engagement +
-// sentiment is supplementary context, not primary content — a failure must
-// not block hot topics from rendering, and degrades silently to "no
-// engagement data" rather than a red error banner.
+// Errors/missing data here are swallowed on purpose (sub-project 3's spec
+// §5): engagement + sentiment is supplementary context, not primary
+// content — a failure must not block hot topics from rendering, and
+// degrades silently rather than a red error banner.
 async function loadThreadsEngagement(
   bySource: Record<CandidateTopic['source'], HotTopicRow[]>,
   date: string | null
@@ -57,18 +62,49 @@ async function loadThreadsEngagement(
   }
 }
 
+// Same silent-degradation rule (this spec's §7): a KPI/donut load failure
+// just means the section doesn't render, no red banner.
+async function loadOverviewMetrics(
+  date: string | null
+): Promise<{ metrics: OverviewMetrics; donut: DonutSegment[] } | null> {
+  if (date === null) return null;
+  try {
+    const client = createServerSupabaseClient();
+    return await getOverviewMetrics(
+      new SupabaseCandidateTopicsReader(client),
+      new SupabaseArticlesReader(client),
+      new SupabaseThreadsEngagementReader(client),
+      new SupabaseFacebookEngagementReader(client),
+      new SupabaseThreadsSentimentReader(client),
+      new SupabaseFacebookSentimentReader(client),
+      date
+    );
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
+}
+
 export default async function OverviewPage() {
   const [hotTopics, articles] = await Promise.all([loadHotTopics(), loadArticles()]);
+
+  const [threadsEnrichedBySource, overviewMetrics] = await Promise.all([
+    'error' in hotTopics ? Promise.resolve(null) : loadThreadsEngagement(hotTopics.bySource, hotTopics.date),
+    'error' in hotTopics ? Promise.resolve(null) : loadOverviewMetrics(hotTopics.date),
+  ]);
 
   const hotTopicsWithEngagement =
     'error' in hotTopics
       ? hotTopics
-      : { ...hotTopics, bySource: await loadThreadsEngagement(hotTopics.bySource, hotTopics.date) };
+      : { ...hotTopics, bySource: threadsEnrichedBySource ?? withoutEngagement(hotTopics.bySource) };
 
   return (
     <>
       <Topbar title="Overview" />
       <main className="max-w-4xl mx-auto p-6">
+        {overviewMetrics && (
+          <OverviewMetricsSection metrics={overviewMetrics.metrics} donut={overviewMetrics.donut} />
+        )}
         {'error' in hotTopicsWithEngagement ? (
           <p className="text-red-600">{hotTopicsWithEngagement.error}</p>
         ) : (
