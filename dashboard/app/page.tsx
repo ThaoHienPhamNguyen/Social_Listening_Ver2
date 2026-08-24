@@ -4,7 +4,7 @@ import { SupabaseArticlesReader } from '../lib/articles-reader';
 import { getHotTopics, type HotTopicsResult } from '../lib/get-hot-topics';
 import { HotTopicsSection } from '../components/HotTopicsSection';
 import { ArticlesSection } from '../components/ArticlesSection';
-import { CategoryNav } from '../components/CategoryNav';
+import { Topbar } from '../components/layout/Topbar';
 import type { Article } from '../lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -33,21 +33,22 @@ export default async function OverviewPage() {
   const [hotTopics, articles] = await Promise.all([loadHotTopics(), loadArticles()]);
 
   return (
-    <main className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">Social Listening — Overview</h1>
-      <CategoryNav />
-      {'error' in hotTopics ? (
-        <p className="text-red-600">{hotTopics.error}</p>
-      ) : (
-        <HotTopicsSection date={hotTopics.date} bySource={hotTopics.bySource} />
-      )}
-      <div className="mt-8">
-        {'error' in articles ? (
-          <p className="text-red-600">{articles.error}</p>
+    <>
+      <Topbar title="Overview" />
+      <main className="max-w-4xl mx-auto p-6">
+        {'error' in hotTopics ? (
+          <p className="text-red-600">{hotTopics.error}</p>
         ) : (
-          <ArticlesSection articles={articles} />
+          <HotTopicsSection date={hotTopics.date} bySource={hotTopics.bySource} />
         )}
-      </div>
-    </main>
+        <div className="mt-8">
+          {'error' in articles ? (
+            <p className="text-red-600">{articles.error}</p>
+          ) : (
+            <ArticlesSection articles={articles} />
+          )}
+        </div>
+      </main>
+    </>
   );
 }

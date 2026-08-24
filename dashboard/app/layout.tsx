@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { Sidebar } from '../components/layout/Sidebar';
 
 export const metadata: Metadata = {
   title: 'Social Listening Dashboard',
@@ -9,7 +10,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="vi">
-      <body className="bg-white text-gray-900">{children}</body>
+      <body>
+        <Sidebar />
+        <div className="pl-sidebar">{children}</div>
+      </body>
     </html>
   );
 }
