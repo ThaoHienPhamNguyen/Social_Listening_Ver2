@@ -21,10 +21,10 @@ export function Topbar({ title, color }: { title: string; color?: string }) {
   return (
     <header className="sticky top-0 z-40 h-topbar flex items-center px-8 bg-surface border-b border-line">
       <div>
-        <h1 className="text-lg font-bold text-ink" style={color ? { color } : undefined}>
+        <h1 className="text-xl font-bold text-ink" style={color ? { color } : undefined}>
           {title}
         </h1>
-        <p className="text-xs text-ink-3 mt-0.5">{today}</p>
+        <p className="text-xs text-ink-3 mt-0.5 min-h-[1em]">{today}</p>
       </div>
     </header>
   );

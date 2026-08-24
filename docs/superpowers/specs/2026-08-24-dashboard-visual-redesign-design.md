@@ -1,7 +1,7 @@
 # Dashboard Visual Redesign — Design Spec
 
 **Ngày:** 2026-08-24
-**Trạng thái:** Design approved, chưa implement.
+**Trạng thái:** Đã implement — 7/7 task hoàn thành, chờ merge.
 
 ## Bối cảnh
 

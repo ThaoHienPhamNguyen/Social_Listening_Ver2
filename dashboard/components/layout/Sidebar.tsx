@@ -31,6 +31,7 @@ export function Sidebar() {
           </p>
           <Link
             href="/"
+            aria-current={pathname === '/' ? 'page' : undefined}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-sm font-medium transition-colors ${
               pathname === '/'
                 ? 'bg-brand-faint text-brand font-semibold'
@@ -58,6 +59,7 @@ export function Sidebar() {
                 <Link
                   key={cat.slug}
                   href={href}
+                  aria-current={active ? 'page' : undefined}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-sm font-medium transition-colors ${
                     active
                       ? 'bg-brand-faint text-brand font-semibold'

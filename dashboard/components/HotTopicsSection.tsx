@@ -50,9 +50,9 @@ export function HotTopicsSection({
             <p className="text-[11px] font-semibold text-ink-3 tracking-wider uppercase mb-2">
               {SOURCE_LABELS[source]}
             </p>
-            <div className="space-y-0.5">
+            <ul className="space-y-0.5">
               {bySource[source].map((row, i) => (
-                <div
+                <li
                   key={row.id}
                   className="flex items-center gap-3 px-3 py-2 rounded-[10px] hover:bg-muted transition-colors"
                 >
@@ -61,9 +61,9 @@ export function HotTopicsSection({
                   <span className="text-xs text-ink-3 whitespace-nowrap flex-shrink-0">
                     {formatTrendingScore(row.trendingScore)} · {formatPercent(row.shareOfVoice)}
                   </span>
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
         ))}
       </div>
