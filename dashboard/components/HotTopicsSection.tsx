@@ -1,4 +1,4 @@
-import type { HotTopicRow } from '../lib/hot-topics';
+import type { EnrichedHotTopicRow } from '../lib/topic-engagement';
 import type { CandidateTopic } from '../lib/types';
 
 const SOURCE_LABELS: Record<CandidateTopic['source'], string> = {
@@ -21,12 +21,24 @@ function formatTrendingScore(value: number | null): string {
   return `${value.toFixed(1)}%`;
 }
 
+function sentimentBadgeClass(index: number): string {
+  if (index > 0) return 'bg-success-bg text-success';
+  if (index < 0) return 'bg-danger-bg text-danger';
+  return 'bg-muted text-ink-3';
+}
+
+function formatSentimentBadge(index: number): string {
+  if (index > 0) return `Sentiment +${index}`;
+  if (index < 0) return `Sentiment ${index}`;
+  return 'Sentiment 0';
+}
+
 export function HotTopicsSection({
   date,
   bySource,
 }: {
   date: string | null;
-  bySource: Record<CandidateTopic['source'], HotTopicRow[]>;
+  bySource: Record<CandidateTopic['source'], EnrichedHotTopicRow[]>;
 }) {
   if (date === null) {
     return (
@@ -52,15 +64,26 @@ export function HotTopicsSection({
             </p>
             <ul className="space-y-0.5">
               {bySource[source].map((row, i) => (
-                <li
-                  key={row.id}
-                  className="flex items-center gap-3 px-3 py-2 rounded-[10px] hover:bg-muted transition-colors"
-                >
-                  <span className="w-4 text-center text-xs font-bold text-ink-3 flex-shrink-0">{i + 1}</span>
-                  <span className="flex-1 min-w-0 text-sm text-ink truncate">{row.keyword}</span>
-                  <span className="text-xs text-ink-3 whitespace-nowrap flex-shrink-0">
-                    {formatTrendingScore(row.trendingScore)} · {formatPercent(row.shareOfVoice)}
-                  </span>
+                <li key={row.id} className="px-3 py-2 rounded-[10px] hover:bg-muted transition-colors">
+                  <div className="flex items-center gap-3">
+                    <span className="w-4 text-center text-xs font-bold text-ink-3 flex-shrink-0">{i + 1}</span>
+                    <span className="flex-1 min-w-0 text-sm text-ink truncate">{row.keyword}</span>
+                    <span className="text-xs text-ink-3 whitespace-nowrap flex-shrink-0">
+                      {formatTrendingScore(row.trendingScore)} · {formatPercent(row.shareOfVoice)}
+                    </span>
+                  </div>
+                  {row.engagement && (
+                    <div className="flex items-center gap-2 mt-1 pl-7">
+                      <span className="text-xs text-ink-3">💬 {row.engagement.totalEngagement} tương tác</span>
+                      {row.engagement.sentimentIndex !== null && (
+                        <span
+                          className={`text-xs rounded-full px-2 py-0.5 ${sentimentBadgeClass(row.engagement.sentimentIndex)}`}
+                        >
+                          {formatSentimentBadge(row.engagement.sentimentIndex)}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
