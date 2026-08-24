@@ -30,9 +30,9 @@ export function HotTopicsSection({
 }) {
   if (date === null) {
     return (
-      <section>
-        <h2 className="text-xl font-semibold mb-2">Topic đang hot</h2>
-        <p className="text-gray-500">Chưa có dữ liệu — chờ lần chạy discovery layer tiếp theo.</p>
+      <section className="bg-surface border border-line rounded-card shadow-card p-6">
+        <h2 className="text-base font-bold text-ink mb-2">Topic đang hot</h2>
+        <p className="text-sm text-ink-3">Chưa có dữ liệu — chờ lần chạy discovery layer tiếp theo.</p>
       </section>
     );
   }
@@ -41,23 +41,29 @@ export function HotTopicsSection({
   const hasAny = sources.some((s) => bySource[s].length > 0);
 
   return (
-    <section>
-      <h2 className="text-xl font-semibold mb-2">Topic đang hot ({date})</h2>
-      {!hasAny && <p className="text-gray-500">Không có topic nào được shortlist hôm nay.</p>}
+    <section className="bg-surface border border-line rounded-card shadow-card p-6">
+      <h2 className="text-base font-bold text-ink mb-4">Topic đang hot ({date})</h2>
+      {!hasAny && <p className="text-sm text-ink-3">Không có topic nào được shortlist hôm nay.</p>}
       <div className="grid gap-6 md:grid-cols-3">
         {sources.map((source) => (
           <div key={source}>
-            <h3 className="font-medium mb-1">{SOURCE_LABELS[source]}</h3>
-            <ul className="space-y-1">
-              {bySource[source].map((row) => (
-                <li key={row.id} className="text-sm flex justify-between gap-2">
-                  <span>{row.keyword}</span>
-                  <span className="text-gray-500 whitespace-nowrap">
+            <p className="text-[11px] font-semibold text-ink-3 tracking-wider uppercase mb-2">
+              {SOURCE_LABELS[source]}
+            </p>
+            <div className="space-y-0.5">
+              {bySource[source].map((row, i) => (
+                <div
+                  key={row.id}
+                  className="flex items-center gap-3 px-3 py-2 rounded-[10px] hover:bg-muted transition-colors"
+                >
+                  <span className="w-4 text-center text-xs font-bold text-ink-3 flex-shrink-0">{i + 1}</span>
+                  <span className="flex-1 min-w-0 text-sm text-ink truncate">{row.keyword}</span>
+                  <span className="text-xs text-ink-3 whitespace-nowrap flex-shrink-0">
                     {formatTrendingScore(row.trendingScore)} · {formatPercent(row.shareOfVoice)}
                   </span>
-                </li>
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
         ))}
       </div>
