@@ -4,6 +4,8 @@ Read-only Next.js dashboard for the social listening tool. Shows today's hot top
 
 Design spec: [`../docs/superpowers/specs/2026-08-21-dashboard-design.md`](../docs/superpowers/specs/2026-08-21-dashboard-design.md)
 
+Visual redesign (Sidebar/Topbar layout, design tokens ported from a prior version of this project): [`../docs/superpowers/specs/2026-08-24-dashboard-visual-redesign-design.md`](../docs/superpowers/specs/2026-08-24-dashboard-visual-redesign-design.md)
+
 ## Local development
 
 ```bash
@@ -24,3 +26,7 @@ Get both values from the Supabase project dashboard → Project Settings → API
 ## Scope
 
 See the design spec for what's in and out of scope. Notably out of scope for this version: sentiment, historical/time-series charts, per-topic detail pages, authentication, and any data from Apify (sub-project 2b, not yet built).
+
+## Known pending items
+
+- **Not mobile-responsive.** The Sidebar added in the 2026-08-24 visual redesign is a fixed 232px column with no breakpoint — on narrow viewports the content column gets cramped (~143px). Deliberately deferred: usage right now is desktop-first, so this was accepted rather than fixed. Revisit if/when mobile viewing becomes a real usage pattern.
