@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildFacebookSummary } from '../lib/facebook-summary';
+import { buildFacebookSummary, facebookEngagementTotal } from '../lib/facebook-summary';
 import type { FacebookEngagementDaily } from '../lib/types';
 
 function engagementRow(overrides: Partial<FacebookEngagementDaily> = {}): FacebookEngagementDaily {
@@ -38,5 +38,12 @@ describe('buildFacebookSummary', () => {
     const result = buildFacebookSummary('tai_chinh', [engagementRow()], new Map());
     expect(result?.sentiment).toEqual({ positive: 0, negative: 0, neutral: 0 });
     expect(result?.sentimentIndex).toBeNull();
+  });
+});
+
+describe('facebookEngagementTotal', () => {
+  it('sums like+comment+share', () => {
+    const total = facebookEngagementTotal(engagementRow());
+    expect(total).toBe(15); // 10+3+2, from the shared engagementRow() fixture above
   });
 });

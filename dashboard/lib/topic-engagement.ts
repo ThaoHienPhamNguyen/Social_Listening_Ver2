@@ -42,7 +42,20 @@ export function computeSentimentIndex(counts: SentimentCounts): number | null {
   return Math.round(((counts.positive - counts.negative) / total) * 100);
 }
 
-function threadsEngagementTotal(row: ThreadsEngagementDaily): number {
+// Same accumulation as groupSentimentCounts but into ONE bucket rather than
+// grouped by key — used where a single overall sentiment figure is wanted
+// (e.g. an Overview-wide Sentiment Score) rather than per-keyword/
+// per-category counts.
+export function countAllSentiment(rows: { sentiment: SentimentLabel | null }[]): SentimentCounts {
+  const counts: SentimentCounts = { positive: 0, negative: 0, neutral: 0 };
+  for (const row of rows) {
+    if (row.sentiment !== 'positive' && row.sentiment !== 'negative' && row.sentiment !== 'neutral') continue;
+    counts[row.sentiment] += 1;
+  }
+  return counts;
+}
+
+export function threadsEngagementTotal(row: ThreadsEngagementDaily): number {
   return (
     row.total_like_count +
     row.total_reply_count +

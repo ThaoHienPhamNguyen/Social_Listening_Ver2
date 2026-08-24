@@ -4,6 +4,8 @@ import {
   computeSentimentIndex,
   attachEngagement,
   withoutEngagement,
+  threadsEngagementTotal,
+  countAllSentiment,
 } from '../lib/topic-engagement';
 import type { HotTopicRow } from '../lib/hot-topics';
 import type { ThreadsEngagementDaily } from '../lib/types';
@@ -133,5 +135,33 @@ describe('withoutEngagement', () => {
     expect(result.google_trends[0].engagement).toBeNull();
     expect(result.youtube).toEqual([]);
     expect(result.rss[0].engagement).toBeNull();
+  });
+});
+
+describe('threadsEngagementTotal', () => {
+  it('sums like+reply+repost+quote+share, excluding view_count', () => {
+    const total = threadsEngagementTotal(engagementRow({ total_view_count: 99999 }));
+    expect(total).toBe(16); // 10+1+2+0+3, from the shared engagementRow() fixture above
+  });
+});
+
+describe('countAllSentiment', () => {
+  it('counts every classified row into one bucket, ignoring key/grouping', () => {
+    const result = countAllSentiment([
+      { sentiment: 'positive' },
+      { sentiment: 'positive' },
+      { sentiment: 'negative' },
+      { sentiment: 'neutral' },
+    ]);
+    expect(result).toEqual({ positive: 2, negative: 1, neutral: 1 });
+  });
+
+  it('ignores null and unknown labels', () => {
+    const result = countAllSentiment([{ sentiment: null }, { sentiment: 'happy' as any }, { sentiment: 'positive' }]);
+    expect(result).toEqual({ positive: 1, negative: 0, neutral: 0 });
+  });
+
+  it('returns all-zero counts for an empty array', () => {
+    expect(countAllSentiment([])).toEqual({ positive: 0, negative: 0, neutral: 0 });
   });
 });

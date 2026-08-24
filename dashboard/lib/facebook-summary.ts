@@ -8,6 +8,10 @@ export interface FacebookSummary {
   sentimentIndex: number | null;
 }
 
+export function facebookEngagementTotal(row: FacebookEngagementDaily): number {
+  return row.total_like_count + row.total_comment_count + row.total_share_count;
+}
+
 export function buildFacebookSummary(
   category: string,
   engagementRows: FacebookEngagementDaily[],
@@ -18,7 +22,7 @@ export function buildFacebookSummary(
 
   const sentiment = sentimentByCategory.get(category) ?? { positive: 0, negative: 0, neutral: 0 };
   return {
-    totalEngagement: engagementRow.total_like_count + engagementRow.total_comment_count + engagementRow.total_share_count,
+    totalEngagement: facebookEngagementTotal(engagementRow),
     postCount: engagementRow.post_count,
     sentiment,
     sentimentIndex: computeSentimentIndex(sentiment),
