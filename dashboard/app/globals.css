@@ -37,6 +37,10 @@
   --color-ink: var(--color-text-primary);
   --color-ink-2: var(--color-text-secondary);
   --color-ink-3: var(--color-text-muted);
+  --color-success: #16a34a;
+  --color-success-bg: #f0fdf4;
+  --color-danger: #dc2626;
+  --color-danger-bg: #fff1f2;
 
   --radius-card: 16px;
   --radius-btn: 9999px;

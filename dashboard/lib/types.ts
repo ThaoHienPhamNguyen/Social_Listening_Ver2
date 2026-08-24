@@ -24,3 +24,27 @@ export interface Article {
   categories: string[];
   snippet: string;
 }
+
+export type SentimentLabel = 'positive' | 'negative' | 'neutral';
+
+export interface ThreadsEngagementDaily {
+  date: string;
+  keyword: string;
+  category: string | null;
+  total_like_count: number;
+  total_reply_count: number;
+  total_repost_count: number;
+  total_quote_count: number;
+  total_share_count: number;
+  total_view_count: number;
+  post_count: number;
+}
+
+export interface FacebookEngagementDaily {
+  date: string;
+  category: string;
+  total_like_count: number;
+  total_comment_count: number;
+  total_share_count: number;
+  post_count: number;
+}
