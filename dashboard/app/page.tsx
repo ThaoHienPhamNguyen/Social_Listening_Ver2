@@ -66,11 +66,11 @@ async function loadThreadsEngagement(
 // just means the section doesn't render, no red banner.
 async function loadOverviewMetrics(
   date: string | null
-): Promise<{ metrics: OverviewMetrics; donut: DonutSegment[] } | null> {
+): Promise<{ metrics: OverviewMetrics; donut: DonutSegment[]; date: string } | null> {
   if (date === null) return null;
   try {
     const client = createServerSupabaseClient();
-    return await getOverviewMetrics(
+    const result = await getOverviewMetrics(
       new SupabaseCandidateTopicsReader(client),
       new SupabaseArticlesReader(client),
       new SupabaseThreadsEngagementReader(client),
@@ -79,6 +79,7 @@ async function loadOverviewMetrics(
       new SupabaseFacebookSentimentReader(client),
       date
     );
+    return { ...result, date };
   } catch (err) {
     console.error(err);
     return null;
@@ -103,7 +104,11 @@ export default async function OverviewPage() {
       <Topbar title="Overview" />
       <main className="max-w-4xl mx-auto p-6">
         {overviewMetrics && (
-          <OverviewMetricsSection metrics={overviewMetrics.metrics} donut={overviewMetrics.donut} />
+          <OverviewMetricsSection
+            metrics={overviewMetrics.metrics}
+            donut={overviewMetrics.donut}
+            date={overviewMetrics.date}
+          />
         )}
         {'error' in hotTopicsWithEngagement ? (
           <p className="text-red-600">{hotTopicsWithEngagement.error}</p>

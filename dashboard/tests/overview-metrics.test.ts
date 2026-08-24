@@ -120,4 +120,17 @@ describe('computeDonutSegments', () => {
     expect(result).toHaveLength(3);
     expect(result.every((s) => s.pct === 0)).toBe(true);
   });
+
+  it('uses largest-remainder rounding so percentages always sum to exactly 100 (three equal thirds)', () => {
+    const result = computeDonutSegments(
+      [],
+      [
+        threadsRow({ category: 'tai_chinh', post_count: 1 }),
+        threadsRow({ category: 'giai_tri', post_count: 1 }),
+      ],
+      [facebookRow({ category: 'du_lich', post_count: 1 })]
+    );
+    const total = result.reduce((sum, s) => sum + s.pct, 0);
+    expect(total).toBe(100);
+  });
 });

@@ -39,6 +39,9 @@ export class SupabaseArticlesReader implements ArticlesReader {
       .lt('published_at', `${nextDateStr}T00:00:00Z`)
       .limit(5000);
     if (error) throw new Error(error.message);
+    if (data && data.length === 5000) {
+      console.warn(`articles-reader: hit the 5000-row limit for date ${date} — Buzz Volume/donut counts may be truncated.`);
+    }
     return (data ?? []) as { id: string; categories: string[] }[];
   }
 }

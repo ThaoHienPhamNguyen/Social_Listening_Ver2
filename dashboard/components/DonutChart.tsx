@@ -15,7 +15,7 @@ export function DonutChart({ data }: { data: DonutSegment[] }) {
 
   return (
     <div className="flex items-center gap-8">
-      <svg width="140" height="140" viewBox="0 0 140 140" className="flex-shrink-0">
+      <svg width="140" height="140" viewBox="0 0 140 140" className="flex-shrink-0" aria-hidden="true">
         <circle cx={CX} cy={CY} r={R} fill="none" stroke="var(--color-muted)" strokeWidth="16" />
         {data.map((seg) => {
           const dash = (seg.pct / 100) * CIRCUMFERENCE;
@@ -45,9 +45,7 @@ export function DonutChart({ data }: { data: DonutSegment[] }) {
               style={{ background: colorForCategory(seg.category) }}
             />
             <span className="text-sm text-ink-2 flex-1">{seg.label}</span>
-            <span className="text-sm font-bold" style={{ color: colorForCategory(seg.category) }}>
-              {seg.pct}%
-            </span>
+            <span className="text-sm font-bold text-ink">{seg.pct}%</span>
           </div>
         ))}
       </div>
