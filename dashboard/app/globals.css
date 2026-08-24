@@ -1,1 +1,58 @@
 @import "tailwindcss";
+
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --color-brand-primary:       #af006e;
+  --color-brand-primary-hover: #930059;
+  --color-brand-primary-light: #fce7f3;
+  --color-brand-primary-faint: #fdf2f8;
+
+  --color-bg-base:   #ffffff;
+  --color-bg-subtle: #fafafa;
+  --color-bg-muted:  #f5f5f5;
+
+  --color-surface-1: #ffffff;
+  --color-surface-2: #fafafa;
+
+  --color-border-light: #e8e8e8;
+  --color-border-base:  #d0d0d0;
+
+  --color-text-primary:   #111111;
+  --color-text-secondary: #5e5e5e;
+  --color-text-muted:     #888888;
+  --color-text-disabled:  #b0b0b0;
+  --color-text-inverse:   #ffffff;
+}
+
+@theme {
+  --color-brand: var(--color-brand-primary);
+  --color-brand-hover: var(--color-brand-primary-hover);
+  --color-brand-faint: var(--color-brand-primary-faint);
+  --color-canvas: var(--color-bg-base);
+  --color-subtle: var(--color-bg-subtle);
+  --color-muted: var(--color-bg-muted);
+  --color-surface: var(--color-surface-1);
+  --color-line: var(--color-border-light);
+  --color-ink: var(--color-text-primary);
+  --color-ink-2: var(--color-text-secondary);
+  --color-ink-3: var(--color-text-muted);
+
+  --radius-card: 16px;
+  --radius-btn: 9999px;
+
+  --shadow-card: 0 1px 3px 0 rgba(0,0,0,.08), 0 1px 2px -1px rgba(0,0,0,.06);
+  --shadow-card-hover: 0 4px 6px -1px rgba(0,0,0,.08), 0 2px 4px -2px rgba(0,0,0,.06);
+
+  --spacing-sidebar: 232px;
+  --spacing-topbar: 64px;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-bg-subtle);
+    color: var(--color-text-primary);
+    font-family: 'Be Vietnam Pro', Inter, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}
