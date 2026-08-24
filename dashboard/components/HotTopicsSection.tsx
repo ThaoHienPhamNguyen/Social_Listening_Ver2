@@ -74,7 +74,9 @@ export function HotTopicsSection({
                   </div>
                   {row.engagement && (
                     <div className="flex items-center gap-2 mt-1 pl-7">
-                      <span className="text-xs text-ink-3">💬 {row.engagement.totalEngagement} tương tác</span>
+                      <span className="text-xs text-ink-3">
+                        <span aria-hidden="true">💬</span> {row.engagement.totalEngagement.toLocaleString('vi-VN')} tương tác
+                      </span>
                       {row.engagement.sentimentIndex !== null && (
                         <span
                           className={`text-xs rounded-full px-2 py-0.5 ${sentimentBadgeClass(row.engagement.sentimentIndex)}`}

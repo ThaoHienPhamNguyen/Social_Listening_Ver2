@@ -102,7 +102,7 @@ export default async function SectorPage({ params }: { params: Promise<{ slug: s
     <>
       <Topbar title={categoryDef.label} color={categoryDef.color} />
       <main className="max-w-4xl mx-auto p-6">
-        <FacebookSummarySection summary={facebookSummary} />
+        <FacebookSummarySection summary={facebookSummary} date={'error' in hotTopics ? null : hotTopics.date} />
         {'error' in hotTopicsWithEngagement ? (
           <p className="text-red-600">{hotTopicsWithEngagement.error}</p>
         ) : (
