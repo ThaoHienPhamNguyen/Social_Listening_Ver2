@@ -41,11 +41,11 @@ export function computeOverviewMetrics(
   return { buzzVolume, topicsTrending, audienceScale, sentimentScore };
 }
 
-export function computeDonutSegments(
+export function accumulateCategoryWeights(
   articles: { categories: string[] }[],
   threadsRows: ThreadsEngagementDaily[],
   facebookRows: FacebookEngagementDaily[]
-): DonutSegment[] {
+): Map<string, number> {
   const weightByCategory = new Map<string, number>();
   const addWeight = (category: string, weight: number) => {
     weightByCategory.set(category, (weightByCategory.get(category) ?? 0) + weight);
@@ -66,6 +66,15 @@ export function computeDonutSegments(
     addWeight(row.category, row.post_count);
   }
 
+  return weightByCategory;
+}
+
+export function computeDonutSegments(
+  articles: { categories: string[] }[],
+  threadsRows: ThreadsEngagementDaily[],
+  facebookRows: FacebookEngagementDaily[]
+): DonutSegment[] {
+  const weightByCategory = accumulateCategoryWeights(articles, threadsRows, facebookRows);
   const total = [...weightByCategory.values()].reduce((sum, v) => sum + v, 0);
 
   if (total === 0) {
