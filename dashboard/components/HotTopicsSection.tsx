@@ -1,37 +1,6 @@
 import type { EnrichedHotTopicRow } from '../lib/topic-engagement';
 import type { CandidateTopic } from '../lib/types';
-
-const SOURCE_LABELS: Record<CandidateTopic['source'], string> = {
-  google_trends: 'Google Trends',
-  youtube: 'YouTube',
-  rss: 'RSS',
-};
-
-function formatPercent(value: number | null): string {
-  return value === null ? '—' : `${value.toFixed(1)}%`;
-}
-
-// growth_rate = 999 is the ingestion pipeline's sentinel for "no prior-week
-// baseline" (see rank-and-select.ts). computeTrendingScore multiplies by
-// 100, so it shows up here as exactly 99900. Render it as "Mới" (new)
-// instead of a nonsense percentage.
-function formatTrendingScore(value: number | null): string {
-  if (value === null) return '—';
-  if (value === 99900) return 'Mới';
-  return `${value.toFixed(1)}%`;
-}
-
-function sentimentBadgeClass(index: number): string {
-  if (index > 0) return 'bg-success-bg text-success';
-  if (index < 0) return 'bg-danger-bg text-danger';
-  return 'bg-muted text-ink-3';
-}
-
-function formatSentimentBadge(index: number): string {
-  if (index > 0) return `Sentiment +${index}`;
-  if (index < 0) return `Sentiment ${index}`;
-  return 'Sentiment 0';
-}
+import { SOURCE_LABELS, formatPercent, formatTrendingScore, sentimentBadgeClass, formatSentimentBadge } from '../lib/hot-topic-format';
 
 export function HotTopicsSection({
   date,
