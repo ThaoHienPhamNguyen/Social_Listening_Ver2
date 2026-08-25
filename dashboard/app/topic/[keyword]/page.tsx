@@ -9,6 +9,8 @@ import { CATEGORIES } from '../../../lib/categories';
 import { SOURCE_LABELS } from '../../../lib/hot-topic-format';
 import { SingleLineChart } from '../../../components/SingleLineChart';
 import { Topbar } from '../../../components/layout/Topbar';
+import { MetricTooltip } from '../../../components/MetricTooltip';
+import { METRIC_TOOLTIPS } from '../../../lib/metric-tooltips';
 
 export const dynamic = 'force-dynamic';
 
@@ -79,7 +81,10 @@ export default async function TopicDetailPage({ params }: { params: Promise<{ ke
         </div>
 
         <div className="bg-surface border border-line rounded-card shadow-card p-6">
-          <h2 className="text-base font-bold text-ink mb-4">Trending Score — 7 ngày qua</h2>
+          <h2 className="text-base font-bold text-ink mb-4">
+            Trending Score — 7 ngày qua
+            <MetricTooltip text={METRIC_TOOLTIPS.topicDetailTrendingScore} />
+          </h2>
           <SingleLineChart
             data={detail.trendingScoreTimeline.map((p) => ({ date: p.date, value: p.score }))}
             color="var(--color-brand)"
@@ -87,7 +92,10 @@ export default async function TopicDetailPage({ params }: { params: Promise<{ ke
         </div>
 
         <div className="bg-surface border border-line rounded-card shadow-card p-6">
-          <h2 className="text-base font-bold text-ink mb-4">Engagement Threads — 7 ngày qua</h2>
+          <h2 className="text-base font-bold text-ink mb-4">
+            Engagement Threads — 7 ngày qua
+            <MetricTooltip text={METRIC_TOOLTIPS.topicDetailEngagement} />
+          </h2>
           <SingleLineChart
             data={detail.engagementTimeline.map((p) => ({
               date: p.date,
@@ -98,7 +106,10 @@ export default async function TopicDetailPage({ params }: { params: Promise<{ ke
         </div>
 
         <div className="bg-surface border border-line rounded-card shadow-card p-6">
-          <h2 className="text-base font-bold text-ink mb-4">Sentiment Threads — 7 ngày qua</h2>
+          <h2 className="text-base font-bold text-ink mb-4">
+            Sentiment Threads — 7 ngày qua
+            <MetricTooltip text={METRIC_TOOLTIPS.topicDetailSentiment} />
+          </h2>
           <SingleLineChart
             data={detail.sentimentTimeline.map((p) => ({ date: p.date, value: computeSentimentIndex(p) }))}
             color="var(--color-brand)"

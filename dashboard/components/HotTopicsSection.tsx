@@ -1,6 +1,8 @@
 import type { EnrichedHotTopicRow } from '../lib/topic-engagement';
 import type { CandidateTopic } from '../lib/types';
 import { SOURCE_LABELS, formatPercent, formatTrendingScore, sentimentBadgeClass, formatSentimentBadge } from '../lib/hot-topic-format';
+import { MetricTooltip } from './MetricTooltip';
+import { METRIC_TOOLTIPS } from '../lib/metric-tooltips';
 
 export function HotTopicsSection({
   date,
@@ -23,7 +25,10 @@ export function HotTopicsSection({
 
   return (
     <section className="bg-surface border border-line rounded-card shadow-card p-6">
-      <h2 className="text-base font-bold text-ink mb-4">Topic đang hot ({date})</h2>
+      <h2 className="text-base font-bold text-ink mb-4">
+        Topic đang hot ({date})
+        <MetricTooltip text={METRIC_TOOLTIPS.topTrending} />
+      </h2>
       {!hasAny && <p className="text-sm text-ink-3">Không có topic nào được shortlist hôm nay.</p>}
       <div className="grid gap-6 md:grid-cols-3">
         {sources.map((source) => (

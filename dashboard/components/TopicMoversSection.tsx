@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { CATEGORIES } from '../lib/categories';
+import { MetricTooltip } from './MetricTooltip';
+import { METRIC_TOOLTIPS } from '../lib/metric-tooltips';
 import type { TopicMover } from '../lib/topic-movers';
 
 function categoryMeta(value: string) {
@@ -60,14 +62,20 @@ export function TopicMoversSection({
   return (
     <div className="grid gap-5 md:grid-cols-2">
       <div className="bg-surface border border-line rounded-card shadow-card p-6">
-        <h2 className="text-base font-bold text-ink mb-1">{hasRealGainers ? 'Top Gainers' : 'Tăng trưởng nhanh nhất'}</h2>
+        <h2 className="text-base font-bold text-ink mb-1">
+          {hasRealGainers ? 'Top Gainers' : 'Tăng trưởng nhanh nhất'}
+          <MetricTooltip text={METRIC_TOOLTIPS.gainersLosers} />
+        </h2>
         <p className="text-xs text-ink-3 mb-4">
           {hasRealGainers ? 'Tăng trưởng mạnh nhất so với kỳ trước' : 'Không có topic tăng trưởng dương kỳ này'}
         </p>
         <MoverList movers={gainers} />
       </div>
       <div className="bg-surface border border-line rounded-card shadow-card p-6">
-        <h2 className="text-base font-bold text-ink mb-1">{hasRealLosers ? 'Top Losers' : 'Tăng trưởng chậm nhất'}</h2>
+        <h2 className="text-base font-bold text-ink mb-1">
+          {hasRealLosers ? 'Top Losers' : 'Tăng trưởng chậm nhất'}
+          <MetricTooltip text={METRIC_TOOLTIPS.gainersLosers} />
+        </h2>
         <p className="text-xs text-ink-3 mb-4">
           {hasRealLosers ? 'Sụt giảm mạnh nhất so với kỳ trước' : 'Buzz tăng ít nhất so với kỳ trước'}
         </p>

@@ -10,6 +10,8 @@ import type { TopicMover } from '../../lib/topic-movers';
 import { BuzzTrendChart } from '../../components/BuzzTrendChart';
 import { TopicMoversSection } from '../../components/TopicMoversSection';
 import { Topbar } from '../../components/layout/Topbar';
+import { MetricTooltip } from '../../components/MetricTooltip';
+import { METRIC_TOOLTIPS } from '../../lib/metric-tooltips';
 
 export const dynamic = 'force-dynamic';
 
@@ -67,7 +69,10 @@ export default async function AnalyticsPage() {
           <>
             <p className="text-xs text-ink-3 mb-4">Dữ liệu tính đến {latestDate}</p>
             <section className="bg-surface border border-line rounded-card shadow-card p-6 mb-8">
-              <h2 className="text-base font-bold text-ink mb-1">Buzz Trend — theo lĩnh vực</h2>
+              <h2 className="text-base font-bold text-ink mb-1">
+                Buzz Trend — theo lĩnh vực
+                <MetricTooltip text={METRIC_TOOLTIPS.buzzTrend} />
+              </h2>
               <p className="text-xs text-ink-3 mb-4">7 ngày qua</p>
               {buzzTrend ? (
                 <BuzzTrendChart data={buzzTrend} />

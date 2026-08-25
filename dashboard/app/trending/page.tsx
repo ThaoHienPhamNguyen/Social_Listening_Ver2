@@ -10,6 +10,8 @@ import { flattenAndRankHotTopics } from '../../lib/trending';
 import { CATEGORIES } from '../../lib/categories';
 import { TrendingTable } from '../../components/TrendingTable';
 import { Topbar } from '../../components/layout/Topbar';
+import { MetricTooltip } from '../../components/MetricTooltip';
+import { METRIC_TOOLTIPS } from '../../lib/metric-tooltips';
 import type { CandidateTopic } from '../../lib/types';
 import type { HotTopicRow } from '../../lib/hot-topics';
 
@@ -66,6 +68,10 @@ export default async function TrendingPage({
     <>
       <Topbar title="Trending Now" />
       <main className="max-w-4xl mx-auto p-6">
+        <p className="text-xs text-ink-3 mb-4">
+          Xếp hạng theo Trending Score
+          <MetricTooltip text={METRIC_TOOLTIPS.trendingScore} position="bottom" />
+        </p>
         <div className="flex gap-2 flex-wrap mb-6">
           {FILTER_OPTIONS.map((opt) => (
             <Link
