@@ -39,10 +39,10 @@ export function HotTopicsSection({
             <ul className="space-y-0.5">
               {bySource[source].map((row, i) => (
                 <li key={row.id} className="px-3 py-2 rounded-[10px] hover:bg-muted transition-colors">
-                  <div className="flex items-center gap-3">
-                    <span className="w-4 text-center text-xs font-bold text-ink-3 flex-shrink-0">{i + 1}</span>
-                    <span className="flex-1 min-w-0 text-sm text-ink truncate">{row.keyword}</span>
-                    <span className="text-xs text-ink-3 whitespace-nowrap flex-shrink-0">
+                  <div className="flex items-start gap-3">
+                    <span className="w-4 text-center text-xs font-bold text-ink-3 flex-shrink-0 mt-0.5">{i + 1}</span>
+                    <span className="flex-1 min-w-0 text-sm text-ink break-words">{row.keyword}</span>
+                    <span className="text-xs text-ink-3 whitespace-nowrap flex-shrink-0 mt-0.5">
                       {formatTrendingScore(row.trendingScore)} · {formatPercent(row.shareOfVoice)}
                     </span>
                   </div>
