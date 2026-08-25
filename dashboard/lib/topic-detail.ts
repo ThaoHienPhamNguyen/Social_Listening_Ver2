@@ -49,7 +49,7 @@ export function computeTopicDetail(
   threadsSentimentRows: { keyword: string; date: string; sentiment: SentimentLabel | null }[],
   dates: string[]
 ): TopicDetailData | null {
-  if (candidateHistory.length === 0 && threadsEngagementRows.length === 0 && threadsSentimentRows.length === 0) {
+  if (candidateHistory.length === 0 && threadsEngagementRows.length === 0) {
     return null;
   }
 

@@ -112,7 +112,7 @@ describe('computeTopicDetail', () => {
   it('counts sentiment per day, ignoring null sentiment, defaulting to zero counts on days with none', () => {
     const result = computeTopicDetail(
       'bitcoin',
-      [],
+      [candidate({ date: '2026-08-18' })],
       [],
       [
         { keyword: 'bitcoin', date: '2026-08-18', sentiment: 'positive' },
