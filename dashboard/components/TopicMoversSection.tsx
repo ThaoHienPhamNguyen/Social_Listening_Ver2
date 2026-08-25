@@ -18,7 +18,7 @@ function MoverList({ movers }: { movers: TopicMover[] }) {
         return (
           <Link
             key={m.keyword}
-            href={`/topic/${encodeURIComponent(m.keyword)}`}
+            href={meta ? `/${meta.slug}` : '/'}
             className="flex items-center gap-3 p-3 rounded-[10px] hover:bg-muted transition-colors group"
           >
             <span className="text-xs font-bold text-ink-3 w-4 flex-shrink-0">{i + 1}</span>

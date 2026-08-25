@@ -66,10 +66,8 @@ export default async function TopicDetailPage({ params }: { params: Promise<{ ke
       <main className="max-w-4xl mx-auto p-6 space-y-6">
         <div className="flex items-center gap-3 flex-wrap">
           {categoryMeta && (
-            <span
-              className="inline-flex items-center h-6 px-2.5 rounded-badge text-xs font-semibold"
-              style={{ background: `${categoryMeta.color}18`, color: categoryMeta.color }}
-            >
+            <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-badge text-xs font-semibold text-ink-3 bg-muted">
+              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: categoryMeta.color }} />
               {categoryMeta.label}
             </span>
           )}
@@ -91,7 +89,10 @@ export default async function TopicDetailPage({ params }: { params: Promise<{ ke
         <div className="bg-surface border border-line rounded-card shadow-card p-6">
           <h2 className="text-base font-bold text-ink mb-4">Engagement Threads — 7 ngày qua</h2>
           <SingleLineChart
-            data={detail.engagementTimeline.map((p) => ({ date: p.date, value: p.totalEngagement }))}
+            data={detail.engagementTimeline.map((p) => ({
+              date: p.date,
+              value: p.postCount === 0 ? null : p.totalEngagement,
+            }))}
             color="var(--color-brand)"
           />
         </div>
