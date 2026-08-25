@@ -9,7 +9,9 @@ import { getHotTopics, type HotTopicsResult } from '../lib/get-hot-topics';
 import { enrichHotTopicsWithThreadsData } from '../lib/get-topic-engagement';
 import { withoutEngagement } from '../lib/topic-engagement';
 import { getOverviewMetrics } from '../lib/get-overview-metrics';
+import { getBuzzTrend } from '../lib/get-buzz-trend';
 import type { OverviewMetrics, DonutSegment } from '../lib/overview-metrics';
+import type { BuzzTrendPoint } from '../lib/buzz-trend';
 import { HotTopicsSection } from '../components/HotTopicsSection';
 import { ArticlesSection } from '../components/ArticlesSection';
 import { OverviewMetricsSection } from '../components/OverviewMetricsSection';
@@ -86,12 +88,32 @@ async function loadOverviewMetrics(
   }
 }
 
+// Same silent-degradation rule — a chart load failure just means the chart
+// doesn't render (falls back to the "Chưa có dữ liệu." message already
+// built into OverviewMetricsSection), no red banner.
+async function loadBuzzTrend(date: string | null): Promise<BuzzTrendPoint[] | null> {
+  if (date === null) return null;
+  try {
+    const client = createServerSupabaseClient();
+    return await getBuzzTrend(
+      new SupabaseArticlesReader(client),
+      new SupabaseThreadsEngagementReader(client),
+      new SupabaseFacebookEngagementReader(client),
+      date
+    );
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
+}
+
 export default async function OverviewPage() {
   const [hotTopics, articles] = await Promise.all([loadHotTopics(), loadArticles()]);
 
-  const [threadsEnrichedBySource, overviewMetrics] = await Promise.all([
+  const [threadsEnrichedBySource, overviewMetrics, buzzTrend] = await Promise.all([
     'error' in hotTopics ? Promise.resolve(null) : loadThreadsEngagement(hotTopics.bySource, hotTopics.date),
     'error' in hotTopics ? Promise.resolve(null) : loadOverviewMetrics(hotTopics.date),
+    'error' in hotTopics ? Promise.resolve(null) : loadBuzzTrend(hotTopics.date),
   ]);
 
   const hotTopicsWithEngagement =
@@ -107,6 +129,7 @@ export default async function OverviewPage() {
           <OverviewMetricsSection
             metrics={overviewMetrics.metrics}
             donut={overviewMetrics.donut}
+            buzzTrend={buzzTrend}
             date={overviewMetrics.date}
           />
         )}
