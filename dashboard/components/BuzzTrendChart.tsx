@@ -6,7 +6,7 @@ const W = 500;
 const PAD = { top: 8, bottom: 24, left: 4, right: 4 };
 
 export function BuzzTrendChart({ data }: { data: BuzzTrendPoint[] }) {
-  if (data.length === 0) {
+  if (data.length <= 1) {
     return (
       <div className="flex items-center justify-center text-sm text-ink-3" style={{ height: H + 32 }}>
         Chưa có dữ liệu
@@ -27,6 +27,14 @@ export function BuzzTrendChart({ data }: { data: BuzzTrendPoint[] }) {
     ...new Set([...Array.from({ length: 7 }, (_, i) => Math.min(i * step, data.length - 1)), data.length - 1]),
   ];
 
+  // Compute category paths once to avoid duplication
+  const categoryPaths = CATEGORIES.map((c) => {
+    const coords = data.map((p, i) => ({ x: toX(i), y: toY(Number(p[c.value])) }));
+    const linePath = coords.map((pt, i) => `${i === 0 ? 'M' : 'L'} ${pt.x} ${pt.y}`).join(' ');
+    const areaPath = `${linePath} L ${coords[coords.length - 1].x} ${PAD.top + chartH} L ${coords[0].x} ${PAD.top + chartH} Z`;
+    return { c, linePath, areaPath };
+  });
+
   return (
     <div>
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: H + 8 }} aria-hidden="true">
@@ -45,27 +53,20 @@ export function BuzzTrendChart({ data }: { data: BuzzTrendPoint[] }) {
             />
           );
         })}
-        {CATEGORIES.map((c) => {
-          const coords = data.map((p, i) => ({ x: toX(i), y: toY(Number(p[c.value])) }));
-          const linePath = coords.map((pt, i) => `${i === 0 ? 'M' : 'L'} ${pt.x} ${pt.y}`).join(' ');
-          const areaPath = `${linePath} L ${coords[coords.length - 1].x} ${PAD.top + chartH} L ${coords[0].x} ${PAD.top + chartH} Z`;
-          return <path key={`area-${c.value}`} d={areaPath} fill={c.color} fillOpacity={0.06} />;
-        })}
-        {CATEGORIES.map((c) => {
-          const coords = data.map((p, i) => ({ x: toX(i), y: toY(Number(p[c.value])) }));
-          const linePath = coords.map((pt, i) => `${i === 0 ? 'M' : 'L'} ${pt.x} ${pt.y}`).join(' ');
-          return (
-            <path
-              key={c.value}
-              d={linePath}
-              fill="none"
-              stroke={c.color}
-              strokeWidth="2"
-              strokeLinejoin="round"
-              strokeLinecap="round"
-            />
-          );
-        })}
+        {categoryPaths.map(({ c, areaPath }) => (
+          <path key={`area-${c.value}`} d={areaPath} fill={c.color} fillOpacity={0.06} />
+        ))}
+        {categoryPaths.map(({ c, linePath }) => (
+          <path
+            key={c.value}
+            d={linePath}
+            fill="none"
+            stroke={c.color}
+            strokeWidth="2"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+        ))}
         {labelIdxs.map((i) => (
           <text key={i} x={toX(i)} y={H - 2} textAnchor="middle" fontSize={9} fill="var(--color-ink-3)">
             {String(data[i].date).slice(5)}
