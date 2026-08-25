@@ -30,9 +30,14 @@ export function SingleLineChart({
   // Build the line path from only the non-null points, so a day with no
   // data leaves a visible gap in the line instead of being drawn as 0.
   let path = '';
+  let afterGap = true;
   data.forEach((d, i) => {
-    if (d.value === null) return;
-    path += `${path === '' ? 'M' : 'L'} ${toX(i)} ${toY(d.value)} `;
+    if (d.value === null) {
+      afterGap = true;
+      return;
+    }
+    path += `${afterGap ? 'M' : 'L'} ${toX(i)} ${toY(d.value)} `;
+    afterGap = false;
   });
 
   return (
