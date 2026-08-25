@@ -8,6 +8,9 @@ export interface HotTopicRow {
   metricValue: number;
   trendingScore: number | null;
   shareOfVoice: number | null;
+  categoryHint?: string[]; // the source candidate's raw category_hint — optional
+  // because existing callers (e.g. groupBySource's own tests) construct
+  // HotTopicRow literals without it; only Trending Now's unified view needs it.
 }
 
 export function filterByCategory(candidates: CandidateTopic[], category: string): CandidateTopic[] {
@@ -70,6 +73,7 @@ export function buildHotTopicsForCategory(
     metricValue: c.metric_value,
     trendingScore: computeTrendingScore(c),
     shareOfVoice: shareMap.get(c.id) ?? null,
+    categoryHint: c.category_hint,
   }));
   return groupBySource(rows);
 }
@@ -103,6 +107,7 @@ export function buildHotTopicsOverview(
       metricValue: c.metric_value,
       trendingScore: computeTrendingScore(c),
       shareOfVoice,
+      categoryHint: c.category_hint,
     };
   });
   return groupBySource(rows);

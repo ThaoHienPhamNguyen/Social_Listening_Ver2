@@ -124,3 +124,17 @@ describe('buildHotTopicsOverview', () => {
     expect(result.rss[0].shareOfVoice).toBeNull();
   });
 });
+
+describe('categoryHint passthrough', () => {
+  it('buildHotTopicsForCategory carries category_hint through onto each row', () => {
+    const c = candidate({ id: 'a', category_hint: ['tai_chinh', 'giai_tri'] });
+    const result = buildHotTopicsForCategory([c], 'tai_chinh');
+    expect(result.rss[0].categoryHint).toEqual(['tai_chinh', 'giai_tri']);
+  });
+
+  it('buildHotTopicsOverview carries category_hint through onto each row', () => {
+    const c = candidate({ id: 'a', category_hint: ['du_lich'] });
+    const result = buildHotTopicsOverview([c], ['tai_chinh', 'giai_tri', 'du_lich']);
+    expect(result.rss[0].categoryHint).toEqual(['du_lich']);
+  });
+});
