@@ -20,12 +20,16 @@ function row(overrides: Partial<ThreadsEngagementDaily> = {}): ThreadsEngagement
 
 describe('computeTopicMovers', () => {
   it('ranks gainers by deltaPct descending', () => {
-    const current = [row({ keyword: 'a', total_like_count: 20 }), row({ keyword: 'b', total_like_count: 10 })];
+    // b uses a genuine positive delta (+50%, not 0%) so it still qualifies as a
+    // "true gainer" under the Fix 5 hasRealGainers filter (deltaPct > 0) — see
+    // final-review finding 5. A 0% keyword is correctly excluded from gainers
+    // once a real gainer exists, so it can no longer stand in for this case.
+    const current = [row({ keyword: 'a', total_like_count: 20 }), row({ keyword: 'b', total_like_count: 15 })];
     const previous = [row({ keyword: 'a', total_like_count: 10 }), row({ keyword: 'b', total_like_count: 10 })];
     const { gainers } = computeTopicMovers(current, previous);
     expect(gainers.map((g) => g.keyword)).toEqual(['a', 'b']);
     expect(gainers[0].deltaPct).toBe(100);
-    expect(gainers[1].deltaPct).toBe(0);
+    expect(gainers[1].deltaPct).toBe(50);
   });
 
   it('treats a brand-new keyword (no previous rows) as +100%', () => {
@@ -90,5 +94,31 @@ describe('computeTopicMovers', () => {
     const current = Array.from({ length: 8 }, (_, i) => row({ keyword: `k${i}`, total_like_count: 10 + i }));
     const { gainers } = computeTopicMovers(current, []);
     expect(gainers).toHaveLength(5);
+  });
+
+  it('resolves category consistently regardless of row processing order (regression for the order-dependent bug)', () => {
+    const newestNull = row({ keyword: 'bitcoin', date: '2026-08-24', category: null, total_like_count: 5 });
+    const olderWithCategory = row({ keyword: 'bitcoin', date: '2026-08-23', category: 'tai_chinh', total_like_count: 3 });
+
+    const forward = computeTopicMovers([newestNull, olderWithCategory], []);
+    const reversed = computeTopicMovers([olderWithCategory, newestNull], []);
+
+    expect(forward.gainers[0]).toMatchObject({ keyword: 'bitcoin', category: 'tai_chinh' });
+    expect(reversed.gainers[0]).toMatchObject({ keyword: 'bitcoin', category: 'tai_chinh' });
+  });
+
+  it('falls back to the least-negative "gainers" and sets hasRealGainers=false when every keyword lost buzz', () => {
+    const current = [row({ keyword: 'a', total_like_count: 5 }), row({ keyword: 'b', total_like_count: 2 })];
+    const previous = [row({ keyword: 'a', total_like_count: 10 }), row({ keyword: 'b', total_like_count: 10 })];
+    const { gainers, hasRealGainers } = computeTopicMovers(current, previous);
+    expect(hasRealGainers).toBe(false);
+    expect(gainers[0].keyword).toBe('a'); // -50% is less negative than -80%
+  });
+
+  it('sets hasRealGainers=true when at least one keyword has positive deltaPct', () => {
+    const current = [row({ keyword: 'up', total_like_count: 20 })];
+    const previous = [row({ keyword: 'up', total_like_count: 10 })];
+    const { hasRealGainers } = computeTopicMovers(current, previous);
+    expect(hasRealGainers).toBe(true);
   });
 });

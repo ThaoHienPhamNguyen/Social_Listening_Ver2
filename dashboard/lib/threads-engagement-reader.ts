@@ -27,8 +27,14 @@ export class SupabaseThreadsEngagementReader implements ThreadsEngagementReader 
         'date, keyword, category, total_like_count, total_reply_count, total_repost_count, total_quote_count, total_share_count, total_view_count, post_count'
       )
       .gte('date', startDate)
-      .lt('date', endDateExclusive);
+      .lt('date', endDateExclusive)
+      .limit(5000);
     if (error) throw new Error(error.message);
+    if (data && data.length === 5000) {
+      console.warn(
+        `threads-engagement-reader: hit the 5000-row limit for range [${startDate}, ${endDateExclusive}) — Buzz Trend/Topic Movers counts may be truncated.`
+      );
+    }
     return (data ?? []) as ThreadsEngagementDaily[];
   }
 }

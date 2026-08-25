@@ -10,7 +10,7 @@ function addDaysUTC(date: string, days: number): string {
 export async function getTopicMovers(
   threadsEngagementReader: ThreadsEngagementReader,
   latestDate: string
-): Promise<{ gainers: TopicMover[]; losers: TopicMover[]; hasRealLosers: boolean }> {
+): Promise<{ gainers: TopicMover[]; losers: TopicMover[]; hasRealGainers: boolean; hasRealLosers: boolean }> {
   const currentStart = addDaysUTC(latestDate, -6);
   const endDateExclusive = addDaysUTC(latestDate, 1);
   const previousStart = addDaysUTC(latestDate, -13);

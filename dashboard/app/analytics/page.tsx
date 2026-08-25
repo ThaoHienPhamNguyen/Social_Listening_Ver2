@@ -40,7 +40,7 @@ async function loadBuzzTrend(date: string): Promise<BuzzTrendPoint[] | null> {
 
 async function loadTopicMovers(
   date: string
-): Promise<{ gainers: TopicMover[]; losers: TopicMover[]; hasRealLosers: boolean } | null> {
+): Promise<{ gainers: TopicMover[]; losers: TopicMover[]; hasRealGainers: boolean; hasRealLosers: boolean } | null> {
   try {
     const client = createServerSupabaseClient();
     return await getTopicMovers(new SupabaseThreadsEngagementReader(client), date);
@@ -65,6 +65,7 @@ export default async function AnalyticsPage() {
           <p className="text-sm text-ink-3">Chưa có dữ liệu.</p>
         ) : (
           <>
+            <p className="text-xs text-ink-3 mb-4">Dữ liệu tính đến {latestDate}</p>
             <section className="bg-surface border border-line rounded-card shadow-card p-6 mb-8">
               <h2 className="text-base font-bold text-ink mb-1">Buzz Trend — theo lĩnh vực</h2>
               <p className="text-xs text-ink-3 mb-4">7 ngày qua</p>
@@ -74,12 +75,15 @@ export default async function AnalyticsPage() {
                 <p className="text-sm text-ink-3">Chưa có dữ liệu.</p>
               )}
             </section>
-            {topicMovers && (
+            {topicMovers ? (
               <TopicMoversSection
                 gainers={topicMovers.gainers}
                 losers={topicMovers.losers}
+                hasRealGainers={topicMovers.hasRealGainers}
                 hasRealLosers={topicMovers.hasRealLosers}
               />
+            ) : (
+              <p className="text-sm text-ink-3">Chưa có dữ liệu.</p>
             )}
           </>
         )}

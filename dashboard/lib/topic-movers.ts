@@ -11,18 +11,23 @@ export interface TopicMover {
 interface KeywordAgg {
   buzz: number;
   category: string | null;
-  latestDate: string;
+  categoryDate: string | null; // date of the row that supplied `category` — tracked
+  // independently of buzz/date-of-last-row-seen so category resolution is not
+  // order-dependent (a later-arriving row with category:null must not erase
+  // an earlier row's valid category, regardless of which row the Supabase
+  // query happens to return first — see final-review finding 1)
 }
 
 function aggregateByKeyword(rows: ThreadsEngagementDaily[]): Map<string, KeywordAgg> {
   const map = new Map<string, KeywordAgg>();
   for (const row of rows) {
-    const existing = map.get(row.keyword);
-    const buzz = (existing?.buzz ?? 0) + threadsEngagementTotal(row);
-    const isNewest = existing === undefined || row.date >= existing.latestDate;
-    const category = row.category !== null && isNewest ? row.category : (existing?.category ?? null);
-    const latestDate = existing === undefined || row.date > existing.latestDate ? row.date : existing.latestDate;
-    map.set(row.keyword, { buzz, category, latestDate });
+    const existing = map.get(row.keyword) ?? { buzz: 0, category: null, categoryDate: null };
+    const buzz = existing.buzz + threadsEngagementTotal(row);
+    const shouldUpdateCategory =
+      row.category !== null && (existing.categoryDate === null || row.date >= existing.categoryDate);
+    const category = shouldUpdateCategory ? row.category : existing.category;
+    const categoryDate = shouldUpdateCategory ? row.date : existing.categoryDate;
+    map.set(row.keyword, { buzz, category, categoryDate });
   }
   return map;
 }
@@ -33,7 +38,7 @@ function aggregateByKeyword(rows: ThreadsEngagementDaily[]): Map<string, Keyword
 export function computeTopicMovers(
   currentRows: ThreadsEngagementDaily[],
   previousRows: ThreadsEngagementDaily[]
-): { gainers: TopicMover[]; losers: TopicMover[]; hasRealLosers: boolean } {
+): { gainers: TopicMover[]; losers: TopicMover[]; hasRealGainers: boolean; hasRealLosers: boolean } {
   const current = aggregateByKeyword(currentRows);
   const previous = aggregateByKeyword(previousRows);
 
@@ -53,10 +58,12 @@ export function computeTopicMovers(
     movers.push({ keyword, category, buzz, deltaPct });
   }
 
-  const gainers = [...movers].sort((a, b) => b.deltaPct - a.deltaPct).slice(0, 5);
+  const trueGainers = movers.filter((m) => m.deltaPct > 0).sort((a, b) => b.deltaPct - a.deltaPct);
+  const gainers =
+    trueGainers.length > 0 ? trueGainers.slice(0, 5) : [...movers].sort((a, b) => b.deltaPct - a.deltaPct).slice(0, 5);
   const trueLosers = movers.filter((m) => m.deltaPct < 0).sort((a, b) => a.deltaPct - b.deltaPct);
   const losers =
     trueLosers.length > 0 ? trueLosers.slice(0, 5) : [...movers].sort((a, b) => a.deltaPct - b.deltaPct).slice(0, 5);
 
-  return { gainers, losers, hasRealLosers: trueLosers.length > 0 };
+  return { gainers, losers, hasRealGainers: trueGainers.length > 0, hasRealLosers: trueLosers.length > 0 };
 }

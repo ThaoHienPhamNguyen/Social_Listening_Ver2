@@ -49,17 +49,21 @@ function MoverList({ movers }: { movers: TopicMover[] }) {
 export function TopicMoversSection({
   gainers,
   losers,
+  hasRealGainers,
   hasRealLosers,
 }: {
   gainers: TopicMover[];
   losers: TopicMover[];
+  hasRealGainers: boolean;
   hasRealLosers: boolean;
 }) {
   return (
     <div className="grid gap-5 md:grid-cols-2">
       <div className="bg-surface border border-line rounded-card shadow-card p-6">
-        <h2 className="text-base font-bold text-ink mb-1">Top Gainers</h2>
-        <p className="text-xs text-ink-3 mb-4">Tăng trưởng mạnh nhất so với kỳ trước</p>
+        <h2 className="text-base font-bold text-ink mb-1">{hasRealGainers ? 'Top Gainers' : 'Tăng trưởng nhanh nhất'}</h2>
+        <p className="text-xs text-ink-3 mb-4">
+          {hasRealGainers ? 'Tăng trưởng mạnh nhất so với kỳ trước' : 'Không có topic tăng trưởng dương kỳ này'}
+        </p>
         <MoverList movers={gainers} />
       </div>
       <div className="bg-surface border border-line rounded-card shadow-card p-6">
