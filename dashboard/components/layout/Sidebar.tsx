@@ -45,6 +45,20 @@ export function Sidebar() {
             Overview
           </Link>
           <Link
+            href="/trending"
+            aria-current={pathname === '/trending' ? 'page' : undefined}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-sm font-medium transition-colors ${
+              pathname === '/trending'
+                ? 'bg-brand-faint text-brand font-semibold'
+                : 'text-ink-2 hover:bg-muted hover:text-ink'
+            }`}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" />
+            </svg>
+            Trending Now
+          </Link>
+          <Link
             href="/analytics"
             aria-current={pathname === '/analytics' ? 'page' : undefined}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-sm font-medium transition-colors ${
