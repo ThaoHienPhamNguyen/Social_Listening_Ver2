@@ -9,4 +9,11 @@ export class FakeThreadsSentimentReader implements ThreadsSentimentReader {
       .filter((r) => r.date === date)
       .map((r) => ({ keyword: r.keyword, sentiment: r.sentiment }));
   }
+
+  async getForDateRange(
+    startDate: string,
+    endDateExclusive: string
+  ): Promise<{ keyword: string; date: string; sentiment: SentimentLabel | null }[]> {
+    return this.rows.filter((r) => r.date >= startDate && r.date < endDateExclusive);
+  }
 }
