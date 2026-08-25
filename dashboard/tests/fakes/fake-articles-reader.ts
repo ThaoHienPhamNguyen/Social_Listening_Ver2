@@ -18,4 +18,13 @@ export class FakeArticlesReader implements ArticlesReader {
       .filter((a) => a.published_at?.slice(0, 10) === date)
       .map((a) => ({ id: a.id, categories: a.categories }));
   }
+
+  async getForDateRange(startDate: string, endDateExclusive: string): Promise<{ id: string; categories: string[]; date: string }[]> {
+    return this.articles
+      .filter((a) => {
+        const d = a.published_at?.slice(0, 10);
+        return d !== undefined && d >= startDate && d < endDateExclusive;
+      })
+      .map((a) => ({ id: a.id, categories: a.categories, date: a.published_at!.slice(0, 10) }));
+  }
 }

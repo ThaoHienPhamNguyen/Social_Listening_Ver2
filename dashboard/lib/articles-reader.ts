@@ -4,6 +4,7 @@ import type { Article } from './types';
 export interface ArticlesReader {
   getRecentArticles(limit: number, category: string | null): Promise<Article[]>;
   getForDate(date: string): Promise<{ id: string; categories: string[] }[]>;
+  getForDateRange(startDate: string, endDateExclusive: string): Promise<{ id: string; categories: string[]; date: string }[]>;
 }
 
 export class SupabaseArticlesReader implements ArticlesReader {
@@ -43,5 +44,32 @@ export class SupabaseArticlesReader implements ArticlesReader {
       console.warn(`articles-reader: hit the 5000-row limit for date ${date} — Buzz Volume/donut counts may be truncated.`);
     }
     return (data ?? []) as { id: string; categories: string[] }[];
+  }
+
+  // Same [date, date+1) UTC boundary logic as getForDate, generalized to an
+  // arbitrary [startDate, endDateExclusive) range. Rows in this range always
+  // have a non-null published_at (a null published_at can't match any
+  // gte/lt range), so the `date` field below is always derivable.
+  async getForDateRange(
+    startDate: string,
+    endDateExclusive: string
+  ): Promise<{ id: string; categories: string[]; date: string }[]> {
+    const { data, error } = await this.client
+      .from('articles')
+      .select('id, categories, published_at')
+      .gte('published_at', `${startDate}T00:00:00Z`)
+      .lt('published_at', `${endDateExclusive}T00:00:00Z`)
+      .limit(5000);
+    if (error) throw new Error(error.message);
+    if (data && data.length === 5000) {
+      console.warn(
+        `articles-reader: hit the 5000-row limit for range [${startDate}, ${endDateExclusive}) — Buzz Trend counts may be truncated.`
+      );
+    }
+    return ((data ?? []) as { id: string; categories: string[]; published_at: string }[]).map((row) => ({
+      id: row.id,
+      categories: row.categories,
+      date: row.published_at.slice(0, 10),
+    }));
   }
 }

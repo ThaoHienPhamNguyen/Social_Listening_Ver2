@@ -7,4 +7,8 @@ export class FakeThreadsEngagementReader implements ThreadsEngagementReader {
   async getForDate(date: string): Promise<ThreadsEngagementDaily[]> {
     return this.rows.filter((r) => r.date === date);
   }
+
+  async getForDateRange(startDate: string, endDateExclusive: string): Promise<ThreadsEngagementDaily[]> {
+    return this.rows.filter((r) => r.date >= startDate && r.date < endDateExclusive);
+  }
 }
