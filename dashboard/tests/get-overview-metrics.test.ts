@@ -74,4 +74,26 @@ describe('getOverviewMetrics', () => {
     expect(result.metrics.buzzVolume).toBe(0);
     expect(result.metrics.sentimentScore).toBeNull();
   });
+
+  it('computes week-over-week deltas by also fetching the date 7 days earlier', async () => {
+    const articlesReader = new FakeArticlesReader([
+      { id: 'cur-1', url: 'x', title: 'x', published_at: '2026-08-24T10:00:00Z', source_id: 's', categories: ['tai_chinh'], snippet: '' } as Article,
+      { id: 'cur-2', url: 'x', title: 'x', published_at: '2026-08-24T11:00:00Z', source_id: 's', categories: ['tai_chinh'], snippet: '' } as Article,
+      { id: 'prev-1', url: 'x', title: 'x', published_at: '2026-08-17T10:00:00Z', source_id: 's', categories: ['tai_chinh'], snippet: '' } as Article,
+    ]);
+
+    const result = await getOverviewMetrics(
+      new FakeCandidateTopicsReader([]),
+      articlesReader,
+      new FakeThreadsEngagementReader([]),
+      new FakeFacebookEngagementReader([]),
+      new FakeThreadsSentimentReader([]),
+      new FakeFacebookSentimentReader([]),
+      '2026-08-24'
+    );
+
+    // curr buzzVolume = 2 articles, prev (2026-08-17) = 1 article -> (2-1)/1*100 = 100%
+    expect(result.deltas.buzzVolume.text).toBe('▲ +100% so với 7 ngày trước');
+    expect(result.deltas.buzzVolume.positive).toBe(true);
+  });
 });
