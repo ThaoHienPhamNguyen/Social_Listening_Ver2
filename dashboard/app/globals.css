@@ -41,6 +41,10 @@
   --color-success-bg: #f0fdf4;
   --color-danger: #b91c1c;
   --color-danger-bg: #fff1f2;
+  --color-info: #3b82f6;
+  --color-info-bg: #eff6ff;
+  --color-warning: #f59e0b;
+  --color-warning-bg: #fffbeb;
 
   --radius-card: 16px;
   --radius-btn: 9999px;
