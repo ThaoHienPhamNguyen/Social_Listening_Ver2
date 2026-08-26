@@ -7,6 +7,8 @@ import {
   groupBySource,
   buildHotTopicsForCategory,
   buildHotTopicsOverview,
+  sortByRecency,
+  type HotTopicRow,
 } from '../lib/hot-topics';
 import type { CandidateTopic } from '../lib/types';
 
@@ -136,5 +138,37 @@ describe('categoryHint passthrough', () => {
     const c = candidate({ id: 'a', category_hint: ['du_lich'] });
     const result = buildHotTopicsOverview([c], ['tai_chinh', 'giai_tri', 'du_lich']);
     expect(result.rss[0].categoryHint).toEqual(['du_lich']);
+  });
+});
+
+describe('sortByRecency', () => {
+  function hotTopicRow(overrides: Partial<HotTopicRow> = {}): HotTopicRow {
+    return { id: '1', source: 'rss', keyword: 'a', metricValue: 1, trendingScore: 1, shareOfVoice: 1, ...overrides };
+  }
+
+  it('orders rows by createdAt descending', () => {
+    const rows = [
+      hotTopicRow({ id: '1', createdAt: '2026-08-24T08:00:00Z' }),
+      hotTopicRow({ id: '2', createdAt: '2026-08-24T14:00:00Z' }),
+    ];
+    expect(sortByRecency(rows).map((r) => r.id)).toEqual(['2', '1']);
+  });
+
+  it('sorts rows with no createdAt to the end', () => {
+    const rows = [
+      hotTopicRow({ id: '1' }), // no createdAt
+      hotTopicRow({ id: '2', createdAt: '2026-08-24T14:00:00Z' }),
+    ];
+    expect(sortByRecency(rows).map((r) => r.id)).toEqual(['2', '1']);
+  });
+});
+
+describe('buildHotTopicsForCategory createdAt', () => {
+  it('populates createdAt from the candidate row', () => {
+    const candidates = [
+      { id: '1', source: 'rss' as const, keyword: 'a', date: '2026-08-24', metric_value: 1, growth_rate: 0, category_hint: ['tai_chinh'], is_shortlisted: true, created_at: '2026-08-24T09:00:00Z' },
+    ];
+    const result = buildHotTopicsForCategory(candidates, 'tai_chinh');
+    expect(result.rss[0].createdAt).toBe('2026-08-24T09:00:00Z');
   });
 });

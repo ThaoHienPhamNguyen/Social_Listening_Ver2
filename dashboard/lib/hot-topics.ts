@@ -11,6 +11,10 @@ export interface HotTopicRow {
   categoryHint?: string[]; // the source candidate's raw category_hint — optional
   // because existing callers (e.g. groupBySource's own tests) construct
   // HotTopicRow literals without it; only Trending Now's unified view needs it.
+  createdAt?: string; // candidate_topics.created_at — populated by
+  // buildHotTopicsForCategory/buildHotTopicsOverview, consumed by
+  // sortByRecency for the "Mới nhất" tab. Optional for the same reason
+  // categoryHint is: existing HotTopicRow literals in tests don't supply it.
 }
 
 export function filterByCategory(candidates: CandidateTopic[], category: string): CandidateTopic[] {
@@ -74,6 +78,7 @@ export function buildHotTopicsForCategory(
     trendingScore: computeTrendingScore(c),
     shareOfVoice: shareMap.get(c.id) ?? null,
     categoryHint: c.category_hint,
+    createdAt: c.created_at,
   }));
   return groupBySource(rows);
 }
@@ -108,7 +113,17 @@ export function buildHotTopicsOverview(
       trendingScore: computeTrendingScore(c),
       shareOfVoice,
       categoryHint: c.category_hint,
+      createdAt: c.created_at,
     };
   });
   return groupBySource(rows);
+}
+
+// Sort by candidate_topics.created_at descending — the "Mới nhất" tab.
+// Rows fetched for one day still vary in created_at because the discovery
+// layer runs 2-3x/day and upserts, so this distinguishes "most recently
+// (re-)discovered today" from "Trending" (sorted by trendingScore instead).
+// Rows with no createdAt sort last.
+export function sortByRecency<T extends HotTopicRow>(rows: T[]): T[] {
+  return [...rows].sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
 }
