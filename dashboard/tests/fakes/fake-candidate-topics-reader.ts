@@ -16,4 +16,14 @@ export class FakeCandidateTopicsReader implements CandidateTopicsReader {
   async getHistoryForKeyword(keyword: string, startDate: string, endDateExclusive: string): Promise<CandidateTopic[]> {
     return this.candidates.filter((c) => c.keyword === keyword && c.date >= startDate && c.date < endDateExclusive);
   }
+
+  async getShortlistedForDateRange(
+    category: string,
+    startDate: string,
+    endDateExclusive: string
+  ): Promise<CandidateTopic[]> {
+    return this.candidates.filter(
+      (c) => c.is_shortlisted && c.category_hint.includes(category) && c.date >= startDate && c.date < endDateExclusive
+    );
+  }
 }

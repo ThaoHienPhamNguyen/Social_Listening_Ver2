@@ -14,6 +14,11 @@ export interface CandidateTopicsReader {
   // readers (1000 vs 5000) since it's already filtered to a single keyword —
   // 3 sources × 7 days = 21 rows in the normal case, 1000 is a wide safety margin.
   getHistoryForKeyword(keyword: string, startDate: string, endDateExclusive: string): Promise<CandidateTopic[]>;
+  // Every shortlisted candidate_topics row for one category within
+  // [startDate, endDateExclusive) — used by getSectorMetrics's 7-day
+  // window (current + previous period fetched together, split by date
+  // locally — same pattern as getTopicMovers/getBuzzTrend).
+  getShortlistedForDateRange(category: string, startDate: string, endDateExclusive: string): Promise<CandidateTopic[]>;
 }
 
 export class SupabaseCandidateTopicsReader implements CandidateTopicsReader {
@@ -32,7 +37,7 @@ export class SupabaseCandidateTopicsReader implements CandidateTopicsReader {
   async getCandidatesForDate(date: string): Promise<CandidateTopic[]> {
     const { data, error } = await this.client
       .from('candidate_topics')
-      .select('id, source, keyword, date, metric_value, growth_rate, category_hint, is_shortlisted')
+      .select('id, source, keyword, date, metric_value, growth_rate, category_hint, is_shortlisted, created_at')
       .eq('date', date)
       .order('metric_value', { ascending: false })
       .limit(5000);
@@ -43,7 +48,7 @@ export class SupabaseCandidateTopicsReader implements CandidateTopicsReader {
   async getHistoryForKeyword(keyword: string, startDate: string, endDateExclusive: string): Promise<CandidateTopic[]> {
     const { data, error } = await this.client
       .from('candidate_topics')
-      .select('id, source, keyword, date, metric_value, growth_rate, category_hint, is_shortlisted')
+      .select('id, source, keyword, date, metric_value, growth_rate, category_hint, is_shortlisted, created_at')
       .eq('keyword', keyword)
       .gte('date', startDate)
       .lt('date', endDateExclusive)
@@ -52,6 +57,28 @@ export class SupabaseCandidateTopicsReader implements CandidateTopicsReader {
     if (data && data.length === 1000) {
       console.warn(
         `candidate-topics-reader: hit the 1000-row limit for keyword "${keyword}" range [${startDate}, ${endDateExclusive}) — Topic detail history may be truncated.`
+      );
+    }
+    return (data ?? []) as CandidateTopic[];
+  }
+
+  async getShortlistedForDateRange(
+    category: string,
+    startDate: string,
+    endDateExclusive: string
+  ): Promise<CandidateTopic[]> {
+    const { data, error } = await this.client
+      .from('candidate_topics')
+      .select('id, source, keyword, date, metric_value, growth_rate, category_hint, is_shortlisted, created_at')
+      .eq('is_shortlisted', true)
+      .contains('category_hint', [category])
+      .gte('date', startDate)
+      .lt('date', endDateExclusive)
+      .limit(5000);
+    if (error) throw new Error(error.message);
+    if (data && data.length === 5000) {
+      console.warn(
+        `candidate-topics-reader: hit the 5000-row limit for category ${category}, range [${startDate}, ${endDateExclusive}) — sector metrics may be truncated.`
       );
     }
     return (data ?? []) as CandidateTopic[];

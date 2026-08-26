@@ -13,6 +13,10 @@ export interface CandidateTopic {
   growth_rate: number | null;
   category_hint: string[];
   is_shortlisted: boolean;
+  created_at?: string; // ISO timestamp — always present on real Supabase rows
+  // (column is NOT NULL), optional here only so existing test fixtures that
+  // build CandidateTopic literals without it don't need updating (same
+  // convention as HotTopicRow.categoryHint below).
 }
 
 export interface Article {
