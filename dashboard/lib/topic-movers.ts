@@ -58,12 +58,18 @@ export function computeTopicMovers(
     movers.push({ keyword, category, buzz, deltaPct });
   }
 
-  const trueGainers = movers.filter((m) => m.deltaPct > 0).sort((a, b) => b.deltaPct - a.deltaPct);
-  const gainers =
-    trueGainers.length > 0 ? trueGainers.slice(0, 5) : [...movers].sort((a, b) => b.deltaPct - a.deltaPct).slice(0, 5);
-  const trueLosers = movers.filter((m) => m.deltaPct < 0).sort((a, b) => a.deltaPct - b.deltaPct);
-  const losers =
-    trueLosers.length > 0 ? trueLosers.slice(0, 5) : [...movers].sort((a, b) => a.deltaPct - b.deltaPct).slice(0, 5);
+  // Secondary sort by buzz breaks ties when every mover shares the same
+  // deltaPct (e.g. all 100% because every keyword is new this period,
+  // prevBuzz=0 for all of them) — without it, gainers-fallback and
+  // losers-fallback both resolve to the same stable-sort order and end up
+  // showing identical lists under different headings.
+  const gainersSort = (a: TopicMover, b: TopicMover) => b.deltaPct - a.deltaPct || b.buzz - a.buzz;
+  const losersSort = (a: TopicMover, b: TopicMover) => a.deltaPct - b.deltaPct || a.buzz - b.buzz;
+
+  const trueGainers = movers.filter((m) => m.deltaPct > 0).sort(gainersSort);
+  const gainers = trueGainers.length > 0 ? trueGainers.slice(0, 5) : [...movers].sort(gainersSort).slice(0, 5);
+  const trueLosers = movers.filter((m) => m.deltaPct < 0).sort(losersSort);
+  const losers = trueLosers.length > 0 ? trueLosers.slice(0, 5) : [...movers].sort(losersSort).slice(0, 5);
 
   return { gainers, losers, hasRealGainers: trueGainers.length > 0, hasRealLosers: trueLosers.length > 0 };
 }

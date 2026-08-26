@@ -122,3 +122,15 @@ describe('computeTopicMovers', () => {
     expect(hasRealGainers).toBe(true);
   });
 });
+
+describe('computeTopicMovers tie-break', () => {
+  it('breaks a deltaPct tie by buzz, so gainers-fallback and losers-fallback differ when every keyword is new', () => {
+    const rows = [
+      row({ keyword: 'high-buzz', total_like_count: 50 }), // buzz 50, no previous row -> deltaPct 100
+      row({ keyword: 'low-buzz', total_like_count: 10 }), // buzz 10, no previous row -> deltaPct 100
+    ];
+    const { gainers, losers } = computeTopicMovers(rows, []);
+    expect(gainers.map((m) => m.keyword)).toEqual(['high-buzz', 'low-buzz']); // gainers-fallback: highest buzz first
+    expect(losers.map((m) => m.keyword)).toEqual(['low-buzz', 'high-buzz']); // losers-fallback: lowest buzz first
+  });
+});
