@@ -20,4 +20,5 @@ export const METRIC_TOOLTIPS = {
   topicDetailEngagement: 'Tổng lượt tương tác Threads của từ khóa này theo từng ngày.',
   topicDetailSentiment: 'Chỉ số sentiment (-100..+100) của từ khóa này theo từng ngày, tính trên các bài Threads đã phân loại.',
   sentimentByCategory: 'Tỉ lệ Tích cực/Trung lập/Tiêu cực của các bài Threads + Facebook đã phân loại, tính riêng cho mỗi lĩnh vực.',
+  buzzByPlatform: '% số bài viết theo từng nền tảng (Báo điện tử/Threads/Facebook) trong khoảng thời gian đang xem.',
 } as const;
