@@ -9,4 +9,11 @@ export class FakeFacebookSentimentReader implements FacebookSentimentReader {
       .filter((r) => r.date === date)
       .map((r) => ({ category: r.category, sentiment: r.sentiment }));
   }
+
+  async getForDateRange(
+    startDate: string,
+    endDateExclusive: string
+  ): Promise<{ category: string; date: string; sentiment: SentimentLabel | null }[]> {
+    return this.rows.filter((r) => r.date >= startDate && r.date < endDateExclusive);
+  }
 }
