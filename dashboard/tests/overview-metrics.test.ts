@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeOverviewMetrics, computeDonutSegments } from '../lib/overview-metrics';
+import { computeOverviewMetrics, computeDonutSegments, computeKpiDelta } from '../lib/overview-metrics';
 import type { CandidateTopic, ThreadsEngagementDaily, FacebookEngagementDaily } from '../lib/types';
 
 function candidate(overrides: Partial<CandidateTopic> = {}): CandidateTopic {
@@ -132,5 +132,22 @@ describe('computeDonutSegments', () => {
     );
     const total = result.reduce((sum, s) => sum + s.pct, 0);
     expect(total).toBe(100);
+  });
+});
+
+describe('computeKpiDelta', () => {
+  it('formats a positive change with an up arrow and rounded percent', () => {
+    const result = computeKpiDelta(120, 100);
+    expect(result).toEqual({ text: '▲ +20% so với 7 ngày trước', positive: true });
+  });
+
+  it('formats a negative change with a down arrow', () => {
+    const result = computeKpiDelta(80, 100);
+    expect(result).toEqual({ text: '▼ -20% so với 7 ngày trước', positive: false });
+  });
+
+  it('falls back to a no-data message when prev is 0', () => {
+    const result = computeKpiDelta(50, 0);
+    expect(result).toEqual({ text: 'Chưa có dữ liệu 7 ngày trước', positive: true });
   });
 });

@@ -41,6 +41,13 @@ export function computeOverviewMetrics(
   return { buzzVolume, topicsTrending, audienceScale, sentimentScore };
 }
 
+export function computeKpiDelta(curr: number, prev: number): { text: string; positive: boolean } {
+  if (prev === 0) return { text: 'Chưa có dữ liệu 7 ngày trước', positive: true };
+  const pct = ((curr - prev) / prev) * 100;
+  const up = pct >= 0;
+  return { text: `${up ? '▲' : '▼'} ${up ? '+' : ''}${pct.toFixed(0)}% so với 7 ngày trước`, positive: up };
+}
+
 export function accumulateCategoryWeights(
   articles: { categories: string[] }[],
   threadsRows: ThreadsEngagementDaily[],
