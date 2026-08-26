@@ -19,4 +19,5 @@ export const METRIC_TOOLTIPS = {
   topicDetailTrendingScore: 'Trending Score của từ khóa này theo từng ngày trong 7 ngày qua.',
   topicDetailEngagement: 'Tổng lượt tương tác Threads của từ khóa này theo từng ngày.',
   topicDetailSentiment: 'Chỉ số sentiment (-100..+100) của từ khóa này theo từng ngày, tính trên các bài Threads đã phân loại.',
+  sentimentByCategory: 'Tỉ lệ Tích cực/Trung lập/Tiêu cực của các bài Threads + Facebook đã phân loại, tính riêng cho mỗi lĩnh vực.',
 } as const;
