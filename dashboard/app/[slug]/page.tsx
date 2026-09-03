@@ -124,10 +124,12 @@ async function loadBuzzByPlatform(category: string, date: string | null): Promis
   if (date === null) return null;
   try {
     const client = createServerSupabaseClient();
+    const rangeStart = addDaysUTC(date, -6);
+    const rangeEndExclusive = addDaysUTC(date, 1);
     const [articles, threadsRows, facebookRows] = await Promise.all([
-      new SupabaseArticlesReader(client).getForDate(date),
-      new SupabaseThreadsEngagementReader(client).getForDate(date),
-      new SupabaseFacebookEngagementReader(client).getForDate(date),
+      new SupabaseArticlesReader(client).getForDateRange(rangeStart, rangeEndExclusive),
+      new SupabaseThreadsEngagementReader(client).getForDateRange(rangeStart, rangeEndExclusive),
+      new SupabaseFacebookEngagementReader(client).getForDateRange(rangeStart, rangeEndExclusive),
     ]);
     return computeBuzzByPlatform(
       articles.filter((a) => a.categories.includes(category)),
@@ -196,12 +198,16 @@ export default async function SectorPage({ params }: { params: Promise<{ slug: s
             />
           </div>
         )}
-        <section className="bg-surface border border-line rounded-card shadow-card p-6 mb-8">
+        <section className="mb-8">
           <h2 className="text-base font-bold text-ink mb-4">
             Chủ đề đang trending
             <MetricTooltip text={METRIC_TOOLTIPS.topTrending} />
           </h2>
-          <TrendingTabs trending={rankedTrending} recent={sortByRecency(rankedTrending)} />
+          {'error' in hotTopics ? (
+            <p className="text-red-600">{hotTopics.error}</p>
+          ) : (
+            <TrendingTabs trending={rankedTrending} recent={sortByRecency(rankedTrending)} />
+          )}
         </section>
         {topKeywords.length > 0 && (
           <section className="bg-surface border border-line rounded-card shadow-card p-6 mb-8">
