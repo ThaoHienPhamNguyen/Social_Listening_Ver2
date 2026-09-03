@@ -23,4 +23,6 @@ export const METRIC_TOOLTIPS = {
   buzzByPlatform: '% số bài viết theo từng nền tảng (Báo điện tử/Threads/Facebook) trong khoảng thời gian đang xem.',
   shareOfVoice: '% Buzz Volume thuộc về mỗi lĩnh vực trong ngày — cùng công thức với biểu đồ Phân bổ lĩnh vực trên Overview.',
   sentimentTrend: 'Số bài Threads + Facebook đã phân loại sentiment mỗi ngày, theo Tích cực/Trung lập/Tiêu cực.',
+  sectorBuzzVolume: 'Tổng số bài báo + bài Threads + bài Facebook thuộc lĩnh vực này trong 7 ngày qua.',
+  sectorActiveTopics: 'Số từ khóa khác nhau đang được shortlist trong lĩnh vực này, 7 ngày qua.',
 } as const;
