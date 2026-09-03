@@ -10,7 +10,6 @@ import { enrichHotTopicsWithThreadsData } from '../lib/get-topic-engagement';
 import { withoutEngagement } from '../lib/topic-engagement';
 import { getOverviewMetrics, type OverviewMetricsResult } from '../lib/get-overview-metrics';
 import { getBuzzTrend } from '../lib/get-buzz-trend';
-import { getSectorMetrics } from '../lib/get-sector-metrics';
 import { flattenAndRankHotTopics } from '../lib/trending';
 import { sortByRecency, type HotTopicRow } from '../lib/hot-topics';
 import { extractTopKeywords } from '../lib/top-keywords';
@@ -120,17 +119,7 @@ async function loadSectorMiniCards(date: string | null) {
     const candidateReader = new SupabaseCandidateTopicsReader(client);
     const results = await Promise.all(
       CATEGORIES.map(async (cat) => {
-        const [hotTopics, sectorMetrics] = await Promise.all([
-          getHotTopics(candidateReader, cat.value),
-          getSectorMetrics(
-            candidateReader,
-            new SupabaseArticlesReader(client),
-            new SupabaseThreadsEngagementReader(client),
-            new SupabaseFacebookEngagementReader(client),
-            cat.value,
-            date
-          ),
-        ]);
+        const hotTopics = await getHotTopics(candidateReader, cat.value);
         const enriched = await loadThreadsEngagement(hotTopics.bySource, hotTopics.date);
         const flattened = flattenAndRankHotTopics(enriched);
         return {
@@ -219,7 +208,7 @@ export default async function OverviewPage() {
             deltas={overviewMetrics.deltas}
           />
         )}
-        <section className="bg-surface border border-line rounded-card shadow-card p-6 mb-8">
+        <section className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-base font-bold text-ink">
               🔥 Top Trending hôm nay
@@ -229,7 +218,11 @@ export default async function OverviewPage() {
               Xem tất cả →
             </Link>
           </div>
-          <TrendingTable rows={rankedTrending.slice(0, 10)} />
+          {'error' in hotTopics ? (
+            <p className="text-red-600">{hotTopics.error}</p>
+          ) : (
+            <TrendingTable rows={rankedTrending.slice(0, 10)} />
+          )}
         </section>
         {sectorMiniCards && (
           <div className="grid gap-6 md:grid-cols-3 mb-8">
