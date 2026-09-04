@@ -21,6 +21,13 @@ export function filterByCategory(candidates: CandidateTopic[], category: string)
   return candidates.filter((c) => c.category_hint.includes(category));
 }
 
+// growth_rate = 999 is the ingestion pipeline's sentinel for "no prior-week
+// baseline" (see rank-and-select.ts) — computeTrendingScore multiplies by
+// 100, so it always shows up here as exactly this value. Exported so
+// formatTrendingScore (renders it as "Mới") and flattenAndRankHotTopics
+// (ranks it below real growth-rate scores) share one source of truth.
+export const NEW_KEYWORD_TRENDING_SCORE = 99900;
+
 export function computeTrendingScore(candidate: CandidateTopic): number | null {
   return candidate.growth_rate === null ? null : candidate.growth_rate * 100;
 }

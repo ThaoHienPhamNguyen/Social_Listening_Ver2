@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { flattenAndRankHotTopics } from '../lib/trending';
+import { NEW_KEYWORD_TRENDING_SCORE } from '../lib/hot-topics';
 import type { EnrichedHotTopicRow } from '../lib/topic-engagement';
 
 function row(overrides: Partial<EnrichedHotTopicRow> = {}): EnrichedHotTopicRow {
@@ -44,5 +45,40 @@ describe('flattenAndRankHotTopics', () => {
     };
     const result = flattenAndRankHotTopics(bySource);
     expect(result.map((r) => r.id)).toEqual(['has-score', 'null-high', 'null-low']);
+  });
+
+  it('ranks "Mới" (no-baseline sentinel) keywords below real growth-rate scores, even when the sentinel is numerically much larger', () => {
+    const bySource = {
+      google_trends: [row({ id: 'real-score', trendingScore: 50, metricValue: 5 })],
+      youtube: [row({ id: 'new-high-metric', trendingScore: NEW_KEYWORD_TRENDING_SCORE, metricValue: 999 })],
+      rss: [],
+    };
+    const result = flattenAndRankHotTopics(bySource);
+    // 'new-high-metric' has a far larger raw trendingScore (99900 vs 50) and
+    // a far larger metricValue, but it must still rank BELOW the real score.
+    expect(result.map((r) => r.id)).toEqual(['real-score', 'new-high-metric']);
+  });
+
+  it('breaks ties among "Mới" keywords by metricValue descending, not the (identical) sentinel score', () => {
+    const bySource = {
+      google_trends: [],
+      youtube: [
+        row({ id: 'new-low', trendingScore: NEW_KEYWORD_TRENDING_SCORE, metricValue: 5 }),
+        row({ id: 'new-high', trendingScore: NEW_KEYWORD_TRENDING_SCORE, metricValue: 500 }),
+      ],
+      rss: [],
+    };
+    const result = flattenAndRankHotTopics(bySource);
+    expect(result.map((r) => r.id)).toEqual(['new-high', 'new-low']);
+  });
+
+  it('orders the 3 tiers correctly when a null-score row is mixed in too', () => {
+    const bySource = {
+      google_trends: [row({ id: 'real', trendingScore: 30, metricValue: 1 })],
+      youtube: [row({ id: 'new', trendingScore: NEW_KEYWORD_TRENDING_SCORE, metricValue: 1 })],
+      rss: [row({ id: 'none', trendingScore: null, metricValue: 1 })],
+    };
+    const result = flattenAndRankHotTopics(bySource);
+    expect(result.map((r) => r.id)).toEqual(['real', 'new', 'none']);
   });
 });

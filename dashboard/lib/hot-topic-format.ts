@@ -1,4 +1,5 @@
 import type { CandidateTopic } from './types';
+import { NEW_KEYWORD_TRENDING_SCORE } from './hot-topics';
 
 export const SOURCE_LABELS: Record<CandidateTopic['source'], string> = {
   google_trends: 'Google Trends',
@@ -10,13 +11,12 @@ export function formatPercent(value: number | null): string {
   return value === null ? '—' : `${value.toFixed(1)}%`;
 }
 
-// growth_rate = 999 is the ingestion pipeline's sentinel for "no prior-week
-// baseline" (see rank-and-select.ts). computeTrendingScore multiplies by
-// 100, so it shows up here as exactly 99900. Render it as "Mới" (new)
-// instead of a nonsense percentage.
+// Render the ingestion pipeline's "no prior-week baseline" sentinel as "Mới"
+// (new) instead of a nonsense percentage — see NEW_KEYWORD_TRENDING_SCORE's
+// own comment for where the value comes from.
 export function formatTrendingScore(value: number | null): string {
   if (value === null) return '—';
-  if (value === 99900) return 'Mới';
+  if (value === NEW_KEYWORD_TRENDING_SCORE) return 'Mới';
   return `${value.toFixed(1)}%`;
 }
 
