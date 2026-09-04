@@ -224,17 +224,33 @@ export default async function OverviewPage() {
             <TrendingTable rows={rankedTrending.slice(0, 10)} />
           )}
         </section>
-        {sectorMiniCards && (
+        {sectorMiniCards ? (
           <div className="grid gap-6 md:grid-cols-3 mb-8">
             {sectorMiniCards.map((c) => (
               <SectorMiniCard key={c.category} {...c} />
             ))}
           </div>
+        ) : (
+          <div className="mb-8">
+            <p className="text-sm text-ink-3">Chưa có dữ liệu.</p>
+          </div>
         )}
-        {(sentimentByCategory || buzzByPlatform) && (
+        {sentimentByCategory || buzzByPlatform ? (
           <div className="grid gap-6 lg:grid-cols-2 mb-8">
-            {sentimentByCategory && <SentimentByCategorySection data={sentimentByCategory} />}
-            {buzzByPlatform && <BuzzByPlatformSection data={buzzByPlatform} />}
+            {sentimentByCategory ? (
+              <SentimentByCategorySection data={sentimentByCategory} />
+            ) : (
+              <p className="text-sm text-ink-3">Chưa có dữ liệu.</p>
+            )}
+            {buzzByPlatform ? (
+              <BuzzByPlatformSection data={buzzByPlatform} />
+            ) : (
+              <p className="text-sm text-ink-3">Chưa có dữ liệu.</p>
+            )}
+          </div>
+        ) : (
+          <div className="mb-8">
+            <p className="text-sm text-ink-3">Chưa có dữ liệu.</p>
           </div>
         )}
         <div className="mt-8">

@@ -93,7 +93,7 @@ describe('getOverviewMetrics', () => {
     );
 
     // curr buzzVolume = 2 articles, prev (2026-08-17) = 1 article -> (2-1)/1*100 = 100%
-    expect(result.deltas.buzzVolume.text).toBe('▲ +100% so với 7 ngày trước');
+    expect(result.deltas.buzzVolume.text).toBe('▲ +100% so với cùng kỳ tuần trước');
     expect(result.deltas.buzzVolume.positive).toBe(true);
   });
 });

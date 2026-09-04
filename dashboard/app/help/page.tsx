@@ -63,9 +63,10 @@ export default function HelpPage() {
             Biểu đồ tròn cho biết trong tổng Buzz Volume hôm nay, bao nhiêu % thuộc về mỗi lĩnh vực. Một
             bài báo thuộc nhiều lĩnh vực sẽ được chia đều % cho các lĩnh vực đó.
           </MetricItem>
-          <MetricItem name="Topic đang hot">
-            Danh sách từ khóa đang được shortlist, chia theo 3 nguồn discovery (Google Trends/YouTube/RSS),
-            xếp theo Trending Score — xem giải thích ở mục Trending Now bên dưới.
+          <MetricItem name="Top Trending hôm nay">
+            Danh sách các topic nổi bật nhất đang được shortlist, gộp chung từ cả 3 nguồn discovery (Google
+            Trends/YouTube/RSS) vào 1 bảng xếp hạng duy nhất theo Trending Score — xem đầy đủ ở trang
+            Trending Now (link "Xem tất cả →").
           </MetricItem>
         </GuideSection>
 
@@ -101,8 +102,10 @@ export default function HelpPage() {
         </GuideSection>
 
         <GuideSection title="Trang lĩnh vực (Tài chính / Giải trí / Du lịch)">
-          <MetricItem name="Topic đang hot">
-            Giống mục cùng tên ở Overview, nhưng chỉ hiện từ khóa thuộc lĩnh vực này.
+          <MetricItem name="Chủ đề đang trending">
+            Bảng xếp hạng topic theo Trending Score, giống cách tính ở Overview/Trending Now nhưng chỉ tính
+            từ khóa thuộc lĩnh vực này — có 2 tab Trending/Mới nhất để xem theo mức độ nổi bật hoặc theo
+            thời điểm được phát hiện gần nhất.
           </MetricItem>
           <MetricItem name="Facebook">
             Số bài + tổng lượt tương tác từ các page Facebook thuộc lĩnh vực này trong ngày, kèm tỷ lệ %

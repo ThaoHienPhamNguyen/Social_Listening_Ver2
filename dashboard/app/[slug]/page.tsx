@@ -173,7 +173,7 @@ export default async function SectorPage({ params }: { params: Promise<{ slug: s
     <>
       <Topbar title={categoryDef.label} color={categoryDef.color} />
       <main className="max-w-4xl mx-auto p-6">
-        {sectorMetrics && (
+        {sectorMetrics ? (
           <div className="grid gap-4 md:grid-cols-3 mb-8">
             <KpiCard
               label="Buzz Volume (7 ngày)"
@@ -197,6 +197,10 @@ export default async function SectorPage({ params }: { params: Promise<{ slug: s
               deltaPositive={sectorMetrics.audienceScaleDelta.positive}
             />
           </div>
+        ) : (
+          <div className="mb-8">
+            <p className="text-sm text-ink-3">Chưa có dữ liệu.</p>
+          </div>
         )}
         <section className="mb-8">
           <h2 className="text-base font-bold text-ink mb-4">
@@ -209,7 +213,7 @@ export default async function SectorPage({ params }: { params: Promise<{ slug: s
             <TrendingTabs trending={rankedTrending} recent={sortByRecency(rankedTrending)} />
           )}
         </section>
-        {topKeywords.length > 0 && (
+        {topKeywords.length > 0 ? (
           <section className="bg-surface border border-line rounded-card shadow-card p-6 mb-8">
             <h2 className="text-base font-bold text-ink mb-4">Từ khóa nổi bật</h2>
             <div className="flex flex-wrap gap-2">
@@ -220,8 +224,20 @@ export default async function SectorPage({ params }: { params: Promise<{ slug: s
               ))}
             </div>
           </section>
+        ) : (
+          <div className="mb-8">
+            <p className="text-sm text-ink-3">Chưa có dữ liệu.</p>
+          </div>
         )}
-        {buzzByPlatform && <div className="mb-8"><BuzzByPlatformSection data={buzzByPlatform} /></div>}
+        {buzzByPlatform ? (
+          <div className="mb-8">
+            <BuzzByPlatformSection data={buzzByPlatform} />
+          </div>
+        ) : (
+          <div className="mb-8">
+            <p className="text-sm text-ink-3">Chưa có dữ liệu.</p>
+          </div>
+        )}
         <FacebookSummarySection summary={facebookSummary} date={date} />
         <div className="mt-8">
           {'error' in articles ? (

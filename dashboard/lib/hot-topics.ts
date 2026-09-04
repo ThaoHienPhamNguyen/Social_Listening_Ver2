@@ -123,7 +123,15 @@ export function buildHotTopicsOverview(
 // Rows fetched for one day still vary in created_at because the discovery
 // layer runs 2-3x/day and upserts, so this distinguishes "most recently
 // (re-)discovered today" from "Trending" (sorted by trendingScore instead).
-// Rows with no createdAt sort last.
+// Rows with no createdAt sort last. Secondary sort by keyword: a batch
+// upsert can give many rows the exact same created_at (Postgres now() is
+// transaction-scoped), and without a tiebreak a tie falls through to
+// whatever order the array arrived in — which for flattenAndRankHotTopics's
+// output is the Trending order, silently making this tab mirror that one.
 export function sortByRecency<T extends HotTopicRow>(rows: T[]): T[] {
-  return [...rows].sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
+  return [...rows].sort((a, b) => {
+    const byCreatedAt = (b.createdAt ?? '').localeCompare(a.createdAt ?? '');
+    if (byCreatedAt !== 0) return byCreatedAt;
+    return a.keyword.localeCompare(b.keyword);
+  });
 }

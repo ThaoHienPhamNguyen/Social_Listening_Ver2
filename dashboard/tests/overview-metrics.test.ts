@@ -148,6 +148,6 @@ describe('computeKpiDelta', () => {
 
   it('falls back to a no-data message when prev is 0', () => {
     const result = computeKpiDelta(50, 0);
-    expect(result).toEqual({ text: 'Chưa có dữ liệu 7 ngày trước', positive: true });
+    expect(result).toEqual({ text: 'Chưa có dữ liệu so với 7 ngày trước', positive: true });
   });
 });

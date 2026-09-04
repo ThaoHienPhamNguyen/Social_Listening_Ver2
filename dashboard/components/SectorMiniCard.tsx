@@ -18,7 +18,7 @@ export function SectorMiniCard({
   if (!meta) return null;
 
   return (
-    <div className="bg-surface border border-line rounded-card shadow-card p-6">
+    <div>
       <div className="flex items-center justify-between mb-4">
         <h3 className="flex items-center gap-2 text-sm font-bold text-ink">
           <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: meta.color }} />

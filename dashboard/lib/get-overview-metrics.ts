@@ -69,8 +69,8 @@ export async function getOverviewMetrics(
     metrics,
     donut,
     deltas: {
-      buzzVolume: computeKpiDelta(metrics.buzzVolume, prevMetrics.buzzVolume),
-      audienceScale: computeKpiDelta(metrics.audienceScale, prevMetrics.audienceScale),
+      buzzVolume: computeKpiDelta(metrics.buzzVolume, prevMetrics.buzzVolume, 'so với cùng kỳ tuần trước'),
+      audienceScale: computeKpiDelta(metrics.audienceScale, prevMetrics.audienceScale, 'so với cùng kỳ tuần trước'),
     },
   };
 }
