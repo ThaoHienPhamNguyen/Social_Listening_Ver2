@@ -13,7 +13,6 @@ import { getBuzzTrend } from '../lib/get-buzz-trend';
 import { flattenAndRankHotTopics } from '../lib/trending';
 import { sortByRecency, type HotTopicRow } from '../lib/hot-topics';
 import { extractTopKeywords } from '../lib/top-keywords';
-import { computeSentimentByCategory, type CategorySentiment } from '../lib/sentiment-by-category';
 import { computeBuzzByPlatform, type PlatformBuzz } from '../lib/buzz-by-platform';
 import { CATEGORIES } from '../lib/categories';
 import type { BuzzTrendPoint } from '../lib/buzz-trend';
@@ -21,7 +20,6 @@ import Link from 'next/link';
 import { ArticlesSection } from '../components/ArticlesSection';
 import { OverviewMetricsSection } from '../components/OverviewMetricsSection';
 import { SectorMiniCard } from '../components/SectorMiniCard';
-import { SentimentByCategorySection } from '../components/SentimentByCategorySection';
 import { BuzzByPlatformSection } from '../components/BuzzByPlatformSection';
 import { TrendingTable } from '../components/TrendingTable';
 import { MetricTooltip } from '../components/MetricTooltip';
@@ -140,23 +138,6 @@ async function loadSectorMiniCards(date: string | null) {
   }
 }
 
-async function loadSentimentByCategory(date: string | null): Promise<CategorySentiment[] | null> {
-  if (date === null) return null;
-  try {
-    const client = createServerSupabaseClient();
-    const candidateReader = new SupabaseCandidateTopicsReader(client);
-    const [candidates, threadsSentiment, facebookSentiment] = await Promise.all([
-      candidateReader.getCandidatesForDate(date),
-      new SupabaseThreadsSentimentReader(client).getForDate(date),
-      new SupabaseFacebookSentimentReader(client).getForDate(date),
-    ]);
-    return computeSentimentByCategory(threadsSentiment, candidates, facebookSentiment);
-  } catch (err) {
-    console.error(err);
-    return null;
-  }
-}
-
 async function loadBuzzByPlatform(date: string | null): Promise<PlatformBuzz[] | null> {
   if (date === null) return null;
   try {
@@ -177,13 +158,12 @@ export default async function OverviewPage() {
   const [hotTopics, articles] = await Promise.all([loadHotTopics(), loadArticles()]);
   const date = 'error' in hotTopics ? null : hotTopics.date;
 
-  const [threadsEnrichedBySource, overviewMetrics, buzzTrend, sectorMiniCards, sentimentByCategory, buzzByPlatform] =
+  const [threadsEnrichedBySource, overviewMetrics, buzzTrend, sectorMiniCards, buzzByPlatform] =
     await Promise.all([
       'error' in hotTopics ? Promise.resolve(null) : loadThreadsEngagement(hotTopics.bySource, hotTopics.date),
       loadOverviewMetrics(date),
       loadBuzzTrend(date),
       loadSectorMiniCards(date),
-      loadSentimentByCategory(date),
       loadBuzzByPlatform(date),
     ]);
 
@@ -235,18 +215,9 @@ export default async function OverviewPage() {
             <p className="text-sm text-ink-3">Chưa có dữ liệu.</p>
           </div>
         )}
-        {sentimentByCategory || buzzByPlatform ? (
-          <div className="grid gap-6 lg:grid-cols-2 mb-8">
-            {sentimentByCategory ? (
-              <SentimentByCategorySection data={sentimentByCategory} />
-            ) : (
-              <p className="text-sm text-ink-3">Chưa có dữ liệu.</p>
-            )}
-            {buzzByPlatform ? (
-              <BuzzByPlatformSection data={buzzByPlatform} />
-            ) : (
-              <p className="text-sm text-ink-3">Chưa có dữ liệu.</p>
-            )}
+        {buzzByPlatform ? (
+          <div className="mb-8">
+            <BuzzByPlatformSection data={buzzByPlatform} />
           </div>
         ) : (
           <div className="mb-8">
