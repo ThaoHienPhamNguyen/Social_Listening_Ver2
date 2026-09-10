@@ -1,11 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
-  groupSentimentCounts,
-  computeSentimentIndex,
   attachEngagement,
   withoutEngagement,
   threadsEngagementTotal,
-  countAllSentiment,
 } from '../lib/topic-engagement';
 import type { HotTopicRow } from '../lib/hot-topics';
 import type { ThreadsEngagementDaily } from '../lib/types';
@@ -37,46 +34,6 @@ function engagementRow(overrides: Partial<ThreadsEngagementDaily> = {}): Threads
     ...overrides,
   };
 }
-
-describe('groupSentimentCounts', () => {
-  it('counts positive/negative/neutral per key', () => {
-    const result = groupSentimentCounts([
-      { key: 'bitcoin', sentiment: 'positive' },
-      { key: 'bitcoin', sentiment: 'positive' },
-      { key: 'bitcoin', sentiment: 'negative' },
-      { key: 'ethereum', sentiment: 'neutral' },
-    ]);
-    expect(result.get('bitcoin')).toEqual({ positive: 2, negative: 1, neutral: 0 });
-    expect(result.get('ethereum')).toEqual({ positive: 0, negative: 0, neutral: 1 });
-  });
-
-  it('ignores null sentiment and unknown labels', () => {
-    const result = groupSentimentCounts([
-      { key: 'bitcoin', sentiment: null },
-      { key: 'bitcoin', sentiment: 'happy' as any },
-      { key: 'bitcoin', sentiment: 'positive' },
-    ]);
-    expect(result.get('bitcoin')).toEqual({ positive: 1, negative: 0, neutral: 0 });
-  });
-});
-
-describe('computeSentimentIndex', () => {
-  it('returns null when total is 0', () => {
-    expect(computeSentimentIndex({ positive: 0, negative: 0, neutral: 0 })).toBeNull();
-  });
-
-  it('computes (positive-negative)/total*100, rounded', () => {
-    expect(computeSentimentIndex({ positive: 6, negative: 2, neutral: 2 })).toBe(40);
-  });
-
-  it('returns a negative number when negative dominates', () => {
-    expect(computeSentimentIndex({ positive: 1, negative: 4, neutral: 0 })).toBe(-60);
-  });
-
-  it('returns 0 when positive and negative are equal', () => {
-    expect(computeSentimentIndex({ positive: 3, negative: 3, neutral: 4 })).toBe(0);
-  });
-});
 
 describe('attachEngagement', () => {
   it('attaches engagement when a matching keyword exists', () => {
@@ -136,23 +93,3 @@ describe('threadsEngagementTotal', () => {
   });
 });
 
-describe('countAllSentiment', () => {
-  it('counts every classified row into one bucket, ignoring key/grouping', () => {
-    const result = countAllSentiment([
-      { sentiment: 'positive' },
-      { sentiment: 'positive' },
-      { sentiment: 'negative' },
-      { sentiment: 'neutral' },
-    ]);
-    expect(result).toEqual({ positive: 2, negative: 1, neutral: 1 });
-  });
-
-  it('ignores null and unknown labels', () => {
-    const result = countAllSentiment([{ sentiment: null }, { sentiment: 'happy' as any }, { sentiment: 'positive' }]);
-    expect(result).toEqual({ positive: 1, negative: 0, neutral: 0 });
-  });
-
-  it('returns all-zero counts for an empty array', () => {
-    expect(countAllSentiment([])).toEqual({ positive: 0, negative: 0, neutral: 0 });
-  });
-});

@@ -29,8 +29,6 @@ export interface Article {
   snippet: string;
 }
 
-export type SentimentLabel = 'positive' | 'negative' | 'neutral';
-
 export interface ThreadsEngagementDaily {
   date: string;
   keyword: string;
