@@ -18,7 +18,9 @@ async function main() {
     return;
   }
 
-  console.log(`topicsSelected=${result.topicsSelected} postsUpserted=${result.postsUpserted} errors=${result.errors.length}`);
+  console.log(
+    `queriesRun=${result.queriesRun} candidatesUpserted=${result.candidatesUpserted} postsUpserted=${result.postsUpserted} errors=${result.errors.length}`
+  );
   if (result.errors.length > 0) {
     result.errors.forEach((e) => console.error(`  - ${e}`));
     process.exitCode = 1;

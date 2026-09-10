@@ -3,33 +3,18 @@ import { runDeepCrawl } from '../src/deep-crawl';
 import { FakeCandidateTopicRepository } from './fakes/fake-candidate-topic-repository';
 import { FakeTopicSocialDataRepository } from './fakes/fake-topic-social-data-repository';
 import type { ThreadsSearchClient, ThreadsPost } from '../src/lib/apify-threads-client';
-import type { CandidateTopic } from '../src/types';
-
-function candidate(overrides: Partial<CandidateTopic>): CandidateTopic {
-  return {
-    id: overrides.id ?? crypto.randomUUID(),
-    source: 'google_trends',
-    keyword: 'x',
-    date: '2026-08-23',
-    metric_value: 100,
-    growth_rate: 1,
-    category_hint: [],
-    is_shortlisted: true,
-    ...overrides,
-  };
-}
 
 function post(overrides: Partial<ThreadsPost> = {}): ThreadsPost {
   return {
     post_url: 'https://threads.net/p/1',
-    text_content: 'hello',
+    text_content: 'giá vàng hôm nay tăng mạnh',
     like_count: 1,
     reply_count: 1,
     repost_count: 0,
     quote_count: 0,
     share_count: 0,
     view_count: 100,
-    posted_at: '2026-08-23T00:00:00Z',
+    posted_at: '2026-09-10T00:00:00Z',
     ...overrides,
   };
 }
@@ -46,14 +31,14 @@ class FakeThreadsSearchClient implements ThreadsSearchClient {
   }
 }
 
-const NOW = () => new Date('2026-08-23T09:00:00Z');
+const NOW = () => new Date('2026-09-10T09:00:00Z');
 
 describe('runDeepCrawl', () => {
   it('skips and returns early when topic_social_data already has rows for today', async () => {
     const candidateRepo = new FakeCandidateTopicRepository();
     const socialRepo = new FakeTopicSocialDataRepository();
     await socialRepo.upsertPosts([
-      { keyword: 'existing', source: 'threads', date: '2026-08-23', post_url: 'https://threads.net/p/0' },
+      { keyword: 'existing', source: 'threads', date: '2026-09-10', post_url: 'https://threads.net/p/0' },
     ]);
     const client = new FakeThreadsSearchClient();
 
@@ -63,112 +48,73 @@ describe('runDeepCrawl', () => {
     expect(client.calls).toEqual([]);
   });
 
-  it('selects topics via selectDeepCrawlTopics and calls the client once per topic', async () => {
+  it('calls the client once per (category, query) pair — 6 calls total', async () => {
     const candidateRepo = new FakeCandidateTopicRepository();
-    candidateRepo.candidates.push(
-      candidate({ keyword: 'bitcoin', date: '2026-08-23', growth_rate: 10 }),
-      candidate({ keyword: 'vang', date: '2026-08-23', growth_rate: 5 })
-    );
     const socialRepo = new FakeTopicSocialDataRepository();
     const client = new FakeThreadsSearchClient();
 
     const result = await runDeepCrawl({ candidateRepo, socialRepo, client, now: NOW });
 
     expect(result.skipped).toBe(false);
-    expect(result.topicsSelected).toBe(2);
-    expect(client.calls.sort()).toEqual(['bitcoin', 'vang']);
-  });
-
-  it('upserts posts returned by the client, tagging them with keyword/source/date', async () => {
-    const candidateRepo = new FakeCandidateTopicRepository();
-    candidateRepo.candidates.push(candidate({ keyword: 'bitcoin', date: '2026-08-23' }));
-    const socialRepo = new FakeTopicSocialDataRepository();
-    const client = new FakeThreadsSearchClient();
-    client.postsByKeyword['bitcoin'] = [post({ post_url: 'https://threads.net/p/1' })];
-
-    const result = await runDeepCrawl({ candidateRepo, socialRepo, client, now: NOW });
-
-    expect(result.postsUpserted).toBe(1);
-    expect(socialRepo.posts).toHaveLength(1);
-    expect(socialRepo.posts[0]).toMatchObject({
-      keyword: 'bitcoin',
-      source: 'threads',
-      date: '2026-08-23',
-      post_url: 'https://threads.net/p/1',
-    });
-  });
-
-  it('isolates one topic\'s client failure from the rest', async () => {
-    const candidateRepo = new FakeCandidateTopicRepository();
-    candidateRepo.candidates.push(
-      candidate({ keyword: 'bitcoin', date: '2026-08-23', growth_rate: 10 }),
-      candidate({ keyword: 'vang', date: '2026-08-23', growth_rate: 5 })
+    expect(result.queriesRun).toBe(6);
+    expect(client.calls.sort()).toEqual(
+      ['chứng khoán', 'du lịch', 'ngân hàng', 'phim chiếu rạp', 'showbiz', 'vé máy bay'].sort()
     );
+  });
+
+  it('extracts keywords from real post text and upserts both candidate_topics and topic_social_data', async () => {
+    const candidateRepo = new FakeCandidateTopicRepository();
     const socialRepo = new FakeTopicSocialDataRepository();
     const client = new FakeThreadsSearchClient();
-    client.errorForKeyword['bitcoin'] = 'actor failed';
-    client.postsByKeyword['vang'] = [post({ post_url: 'https://threads.net/p/2' })];
+    client.postsByKeyword['chứng khoán'] = [
+      post({ post_url: 'https://threads.net/p/1', text_content: 'giá vàng hôm nay tăng mạnh', like_count: 10 }),
+    ];
 
     const result = await runDeepCrawl({ candidateRepo, socialRepo, client, now: NOW });
 
-    expect(result.errors).toEqual(['crawl failed for "bitcoin": actor failed']);
-    expect(result.postsUpserted).toBe(1);
-    expect(socialRepo.posts).toHaveLength(1);
+    expect(result.postsUpserted).toBeGreaterThan(0);
+    expect(result.candidatesUpserted).toBeGreaterThan(0);
+    const giaVang = candidateRepo.candidates.find((c) => c.keyword === 'giá vàng');
+    expect(giaVang).toMatchObject({ source: 'threads', category_hint: ['tai_chinh'], growth_rate: null });
+    const socialRow = socialRepo.posts.find((p) => p.keyword === 'giá vàng');
+    expect(socialRow).toMatchObject({ source: 'threads', post_url: 'https://threads.net/p/1' });
   });
 
-  it('isolates one topic\'s upsert failure from the rest', async () => {
+  it("isolates one query's client failure from the rest", async () => {
     const candidateRepo = new FakeCandidateTopicRepository();
-    candidateRepo.candidates.push(candidate({ keyword: 'bitcoin', date: '2026-08-23' }));
+    const socialRepo = new FakeTopicSocialDataRepository();
+    const client = new FakeThreadsSearchClient();
+    client.errorForKeyword['chứng khoán'] = 'actor failed';
+    client.postsByKeyword['ngân hàng'] = [post({ post_url: 'https://threads.net/p/2', text_content: 'lãi suất ngân hàng' })];
+
+    const result = await runDeepCrawl({ candidateRepo, socialRepo, client, now: NOW });
+
+    expect(result.errors).toEqual(['crawl failed for "tai_chinh/chứng khoán": actor failed']);
+    expect(result.postsUpserted).toBeGreaterThan(0);
+  });
+
+  it("isolates one query's social-post upsert failure from the rest", async () => {
+    const candidateRepo = new FakeCandidateTopicRepository();
     const socialRepo = new FakeTopicSocialDataRepository();
     socialRepo.upsertError = 'db down';
     const client = new FakeThreadsSearchClient();
-    client.postsByKeyword['bitcoin'] = [post()];
+    client.postsByKeyword['chứng khoán'] = [post()];
 
     const result = await runDeepCrawl({ candidateRepo, socialRepo, client, now: NOW });
 
-    expect(result.errors).toEqual(['upsert failed for "bitcoin": db down']);
+    expect(result.errors.some((e) => e.includes('post upsert failed'))).toBe(true);
     expect(result.postsUpserted).toBe(0);
   });
 
-  it('returns 0 topics and makes no client calls when there are no candidates at all today', async () => {
+  it('produces no candidates and no social rows for a query that returns no posts', async () => {
     const candidateRepo = new FakeCandidateTopicRepository();
     const socialRepo = new FakeTopicSocialDataRepository();
     const client = new FakeThreadsSearchClient();
 
     const result = await runDeepCrawl({ candidateRepo, socialRepo, client, now: NOW });
 
-    expect(result.topicsSelected).toBe(0);
-    expect(client.calls).toEqual([]);
-  });
-
-  it('returns 0 topics and makes no client calls when candidates exist but none are shortlisted', async () => {
-    const candidateRepo = new FakeCandidateTopicRepository();
-    candidateRepo.candidates.push(
-      candidate({ keyword: 'bitcoin', date: '2026-08-23', growth_rate: 10, is_shortlisted: false }),
-      candidate({ keyword: 'vang', date: '2026-08-23', growth_rate: 5, is_shortlisted: false })
-    );
-    const socialRepo = new FakeTopicSocialDataRepository();
-    const client = new FakeThreadsSearchClient();
-
-    const result = await runDeepCrawl({ candidateRepo, socialRepo, client, now: NOW });
-
-    expect(result.topicsSelected).toBe(0);
-    expect(client.calls).toEqual([]);
-  });
-
-  it('calls the client at most 8 times when more than 8 candidates are shortlisted', async () => {
-    const candidateRepo = new FakeCandidateTopicRepository();
-    for (let i = 0; i < 10; i++) {
-      candidateRepo.candidates.push(
-        candidate({ keyword: `topic-${i}`, date: '2026-08-23', growth_rate: 10 - i })
-      );
-    }
-    const socialRepo = new FakeTopicSocialDataRepository();
-    const client = new FakeThreadsSearchClient();
-
-    const result = await runDeepCrawl({ candidateRepo, socialRepo, client, now: NOW });
-
-    expect(result.topicsSelected).toBeLessThanOrEqual(8);
-    expect(client.calls.length).toBeLessThanOrEqual(8);
+    expect(result.candidatesUpserted).toBe(0);
+    expect(result.postsUpserted).toBe(0);
+    expect(result.errors).toEqual([]);
   });
 });
