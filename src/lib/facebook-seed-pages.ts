@@ -5,30 +5,12 @@ export interface FacebookSeedPage {
   category: Category;
 }
 
-// Hard-coded seed list, deliberately over-provisioned (2 pages/category) to
-// survive the per-page unreliability measured during 2b's pricing spike
-// (2/3 test pages failed with "not_available"/"no_items"). Each page is
-// picked to be thematically focused on its category (not a general news
-// outlet posting a mix of everything) so the per-page category label is
-// meaningfully accurate — see the design spec §2/§3 and the schema doc's
-// "Known gaps" note on category being per-Page, not per-post.
-//
-// To scale up later (more pages, or raise MAX_POSTS_PER_PAGE in
-// apify-facebook-client.ts), just edit this array/constant — no
-// architecture change needed. See design spec §5.
-//
-// IMPORTANT: these URLs were only checked for HTTP-200/redirect liveness
-// (the page resolves and doesn't 404), NOT for confirmed brand identity —
-// a 200 status does not prove a page actually belongs to the intended
-// brand (Facebook returns 200 for plenty of pages that aren't who they
-// claim to be). Treat the first live run's `no_items`/`not_available`
-// errors, or obviously-wrong post content in the logs, as the real signal
-// to re-check a URL — not the fact that it currently returns 200.
+// Deliberate exception to the group-based model in facebook-seed-groups.ts
+// — VTV24 is a Page, not a community group, kept at the user's explicit
+// request for its reach (4.7M likes) despite being general/mixed news, not
+// tai_chinh-specific content (only 1/5 sampled posts was finance-related
+// when verified live 2026-09-04). Keywords extracted from it will legitimately
+// include non-finance topics — not a bug, see design spec §5.1b.
 export const FACEBOOK_SEED_PAGES: FacebookSeedPage[] = [
-  { url: 'https://www.facebook.com/cafef.vn', category: 'tai_chinh' },
-  { url: 'https://www.facebook.com/vneconomy.vn', category: 'tai_chinh' },
-  { url: 'https://www.facebook.com/kenh14', category: 'giai_tri' },
-  { url: 'https://www.facebook.com/Saostar.vn', category: 'giai_tri' },
-  { url: 'https://www.facebook.com/vietravel', category: 'du_lich' },
-  { url: 'https://www.facebook.com/klook.vietnam', category: 'du_lich' },
+  { url: 'https://www.facebook.com/tintucvtv24/', category: 'tai_chinh' }, // Trung tâm Tin tức VTV24
 ];

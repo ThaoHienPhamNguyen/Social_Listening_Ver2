@@ -2,13 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { FACEBOOK_SEED_PAGES } from '../src/lib/facebook-seed-pages';
 
 describe('FACEBOOK_SEED_PAGES', () => {
-  it('has exactly 6 pages, 2 per category', () => {
-    expect(FACEBOOK_SEED_PAGES).toHaveLength(6);
-    const byCategory = { tai_chinh: 0, giai_tri: 0, du_lich: 0 };
-    for (const page of FACEBOOK_SEED_PAGES) {
-      byCategory[page.category]++;
-    }
-    expect(byCategory).toEqual({ tai_chinh: 2, giai_tri: 2, du_lich: 2 });
+  it('has exactly 1 page (the VTV24 exception), category tai_chinh', () => {
+    expect(FACEBOOK_SEED_PAGES).toHaveLength(1);
+    expect(FACEBOOK_SEED_PAGES[0]).toMatchObject({ category: 'tai_chinh' });
   });
 
   it('has no duplicate page URLs', () => {
