@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { CATEGORIES } from '../lib/categories';
-import { SOURCE_LABELS, formatTrendingScore, sentimentBadgeClass, formatSentimentBadge } from '../lib/hot-topic-format';
+import { SOURCE_LABELS, formatTrendingScore } from '../lib/hot-topic-format';
 import type { EnrichedHotTopicRow } from '../lib/topic-engagement';
 
 function categoryMeta(categoryHint: string[] | undefined) {
@@ -42,15 +42,7 @@ export function TrendingTable({ rows }: { rows: EnrichedHotTopicRow[] }) {
               <span className="text-xs font-bold text-ink-2 whitespace-nowrap flex-shrink-0">
                 {formatTrendingScore(row.trendingScore)}
               </span>
-              {row.engagement && row.engagement.sentimentIndex !== null ? (
-                <span
-                  className={`text-xs rounded-full px-2 py-0.5 whitespace-nowrap flex-shrink-0 ${sentimentBadgeClass(row.engagement.sentimentIndex)}`}
-                >
-                  {formatSentimentBadge(row.engagement.sentimentIndex)}
-                </span>
-              ) : (
-                <span className="text-xs text-ink-3 w-20 text-right flex-shrink-0">—</span>
-              )}
+              <span className="text-xs text-ink-3 w-20 text-right flex-shrink-0">—</span>
             </Link>
           );
         })}

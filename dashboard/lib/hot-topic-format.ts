@@ -21,15 +21,3 @@ export function formatTrendingScore(value: number | null): string {
   if (value === NEW_KEYWORD_TRENDING_SCORE) return 'Mới';
   return `${value.toFixed(1)}%`;
 }
-
-export function sentimentBadgeClass(index: number): string {
-  if (index > 0) return 'bg-success-bg text-success';
-  if (index < 0) return 'bg-danger-bg text-danger';
-  return 'bg-muted text-ink-3';
-}
-
-export function formatSentimentBadge(index: number): string {
-  if (index > 0) return `Sentiment +${index}`;
-  if (index < 0) return `Sentiment ${index}`;
-  return 'Sentiment 0';
-}
