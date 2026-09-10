@@ -32,7 +32,7 @@ export interface FeedItem {
   isoDate?: string;
 }
 
-export type DiscoverySourceName = 'google_trends' | 'youtube' | 'rss';
+export type DiscoverySourceName = 'google_trends' | 'youtube' | 'rss' | 'threads' | 'facebook';
 
 export interface RawCandidate {
   keyword: string;
@@ -75,13 +75,13 @@ export interface TopicSocialData {
   share_count: number | null;
   view_count: number | null;
   posted_at: string | null;
-  sentiment?: SentimentLabel | null;
   fetched_at?: string;
 }
 
 export interface FacebookPageData {
   id?: string;
   page_url: string;
+  keyword: string;
   category: Category;
   date: string;
   post_url: string;
@@ -90,7 +90,6 @@ export interface FacebookPageData {
   comment_count: number | null;
   share_count: number | null;
   posted_at: string | null;
-  sentiment?: SentimentLabel | null;
   fetched_at?: string;
 }
 
