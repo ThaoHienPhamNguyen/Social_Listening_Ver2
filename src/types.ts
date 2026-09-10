@@ -59,8 +59,6 @@ export interface CandidateTopic {
 
 export type DeepCrawlSourceName = 'threads';
 
-export type SentimentLabel = 'positive' | 'negative' | 'neutral';
-
 export interface TopicSocialData {
   id?: string;
   keyword: string;
