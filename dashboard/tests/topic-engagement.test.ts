@@ -79,40 +79,29 @@ describe('computeSentimentIndex', () => {
 });
 
 describe('attachEngagement', () => {
-  it('attaches engagement + sentiment index when a matching keyword exists', () => {
+  it('attaches engagement when a matching keyword exists', () => {
     const rows = [hotTopicRow({ keyword: 'bitcoin' })];
     const engagementByKeyword = new Map([['bitcoin', engagementRow()]]);
-    const sentimentByKeyword = new Map([['bitcoin', { positive: 3, negative: 1, neutral: 1 }]]);
 
-    const result = attachEngagement(rows, engagementByKeyword, sentimentByKeyword);
+    const result = attachEngagement(rows, engagementByKeyword);
 
     expect(result[0].engagement).toEqual({
       totalEngagement: 16, // 10+1+2+0+3, view_count excluded
       postCount: 2,
-      sentiment: { positive: 3, negative: 1, neutral: 1 },
-      sentimentIndex: 40, // (3-1)/5*100
     });
   });
 
   it('sets engagement to null when no matching keyword exists', () => {
     const rows = [hotTopicRow({ keyword: 'ethereum' })];
-    const result = attachEngagement(rows, new Map(), new Map());
+    const result = attachEngagement(rows, new Map());
     expect(result[0].engagement).toBeNull();
-  });
-
-  it('defaults sentiment to all-zero counts when engagement exists but no sentiment data does', () => {
-    const rows = [hotTopicRow({ keyword: 'bitcoin' })];
-    const engagementByKeyword = new Map([['bitcoin', engagementRow()]]);
-    const result = attachEngagement(rows, engagementByKeyword, new Map());
-    expect(result[0].engagement?.sentiment).toEqual({ positive: 0, negative: 0, neutral: 0 });
-    expect(result[0].engagement?.sentimentIndex).toBeNull();
   });
 
   it('preserves all original HotTopicRow fields', () => {
     const rows = [
       hotTopicRow({ id: 'xyz', source: 'youtube', keyword: 'bitcoin', metricValue: 99, trendingScore: 12, shareOfVoice: 4 }),
     ];
-    const result = attachEngagement(rows, new Map(), new Map());
+    const result = attachEngagement(rows, new Map());
     expect(result[0]).toMatchObject({
       id: 'xyz',
       source: 'youtube',

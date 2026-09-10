@@ -10,8 +10,6 @@ export interface SentimentCounts {
 export interface TopicEngagement {
   totalEngagement: number; // like+reply+repost+quote+share, view_count excluded
   postCount: number;
-  sentiment: SentimentCounts;
-  sentimentIndex: number | null;
 }
 
 export interface EnrichedHotTopicRow extends HotTopicRow {
@@ -67,29 +65,25 @@ export function threadsEngagementTotal(row: ThreadsEngagementDaily): number {
 
 export function attachEngagement(
   rows: HotTopicRow[],
-  engagementByKeyword: Map<string, ThreadsEngagementDaily>,
-  sentimentByKeyword: Map<string, SentimentCounts>
+  engagementByKeyword: Map<string, ThreadsEngagementDaily>
 ): EnrichedHotTopicRow[] {
   return rows.map((row) => {
     const engagementRow = engagementByKeyword.get(row.keyword);
     if (!engagementRow) {
       return { ...row, engagement: null };
     }
-    const sentiment = sentimentByKeyword.get(row.keyword) ?? { positive: 0, negative: 0, neutral: 0 };
     return {
       ...row,
       engagement: {
         totalEngagement: threadsEngagementTotal(engagementRow),
         postCount: engagementRow.post_count,
-        sentiment,
-        sentimentIndex: computeSentimentIndex(sentiment),
       },
     };
   });
 }
 
-// Fallback for when the Threads engagement/sentiment fetch fails or there's
-// no date to query yet — every row gets engagement: null, same shape as if
+// Fallback for when the Threads engagement fetch fails or there's no date
+// to query yet — every row gets engagement: null, same shape as if
 // attachEngagement had found no match for any keyword.
 export function withoutEngagement(
   bySource: Record<CandidateTopic['source'], HotTopicRow[]>

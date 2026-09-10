@@ -46,7 +46,6 @@ describe('enrichHotTopicsWithThreadsData', () => {
     const result = await enrichHotTopicsWithThreadsData(bySource, engagementReader, sentimentReader, '2026-08-24');
 
     expect(result.google_trends[0].engagement?.totalEngagement).toBe(10);
-    expect(result.google_trends[0].engagement?.sentimentIndex).toBe(100);
     expect(result.youtube[0].engagement).toBeNull();
     expect(result.rss).toEqual([]);
   });

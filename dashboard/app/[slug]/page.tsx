@@ -5,7 +5,6 @@ import { SupabaseArticlesReader } from '../../lib/articles-reader';
 import { SupabaseThreadsEngagementReader } from '../../lib/threads-engagement-reader';
 import { SupabaseThreadsSentimentReader } from '../../lib/threads-sentiment-reader';
 import { SupabaseFacebookEngagementReader } from '../../lib/facebook-engagement-reader';
-import { SupabaseFacebookSentimentReader } from '../../lib/facebook-sentiment-reader';
 import { getHotTopics, type HotTopicsResult } from '../../lib/get-hot-topics';
 import { enrichHotTopicsWithThreadsData } from '../../lib/get-topic-engagement';
 import { withoutEngagement } from '../../lib/topic-engagement';
@@ -79,7 +78,7 @@ async function loadFacebookSummary(category: string, date: string | null): Promi
   if (date === null) return null;
   try {
     const client = createServerSupabaseClient();
-    return await getFacebookSummary(category, new SupabaseFacebookEngagementReader(client), new SupabaseFacebookSentimentReader(client), date);
+    return await getFacebookSummary(category, new SupabaseFacebookEngagementReader(client), date);
   } catch (err) {
     console.error(err);
     return null;
