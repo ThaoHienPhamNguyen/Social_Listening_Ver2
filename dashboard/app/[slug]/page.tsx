@@ -3,7 +3,6 @@ import { createServerSupabaseClient } from '../../lib/supabase';
 import { SupabaseCandidateTopicsReader } from '../../lib/candidate-topics-reader';
 import { SupabaseArticlesReader } from '../../lib/articles-reader';
 import { SupabaseThreadsEngagementReader } from '../../lib/threads-engagement-reader';
-import { SupabaseThreadsSentimentReader } from '../../lib/threads-sentiment-reader';
 import { SupabaseFacebookEngagementReader } from '../../lib/facebook-engagement-reader';
 import { getHotTopics, type HotTopicsResult } from '../../lib/get-hot-topics';
 import { enrichHotTopicsWithThreadsData } from '../../lib/get-topic-engagement';
@@ -62,12 +61,7 @@ async function loadThreadsEngagement(
   if (date === null) return withoutEngagement(bySource);
   try {
     const client = createServerSupabaseClient();
-    return await enrichHotTopicsWithThreadsData(
-      bySource,
-      new SupabaseThreadsEngagementReader(client),
-      new SupabaseThreadsSentimentReader(client),
-      date
-    );
+    return await enrichHotTopicsWithThreadsData(bySource, new SupabaseThreadsEngagementReader(client), date);
   } catch (err) {
     console.error(err);
     return withoutEngagement(bySource);

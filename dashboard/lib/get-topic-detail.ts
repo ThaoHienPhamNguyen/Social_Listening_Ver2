@@ -1,6 +1,5 @@
 import type { CandidateTopicsReader } from './candidate-topics-reader';
 import type { ThreadsEngagementReader } from './threads-engagement-reader';
-import type { ThreadsSentimentReader } from './threads-sentiment-reader';
 import { computeTopicDetail, type TopicDetailData } from './topic-detail';
 
 function addDaysUTC(date: string, days: number): string {
@@ -12,7 +11,6 @@ function addDaysUTC(date: string, days: number): string {
 export async function getTopicDetail(
   candidateReader: CandidateTopicsReader,
   threadsEngagementReader: ThreadsEngagementReader,
-  threadsSentimentReader: ThreadsSentimentReader,
   keyword: string,
   latestDate: string
 ): Promise<TopicDetailData | null> {
@@ -20,14 +18,12 @@ export async function getTopicDetail(
   const endDateExclusive = addDaysUTC(latestDate, 1);
   const dates = Array.from({ length: 7 }, (_, i) => addDaysUTC(startDate, i));
 
-  const [candidateHistory, threadsRows, sentimentRows] = await Promise.all([
+  const [candidateHistory, threadsRows] = await Promise.all([
     candidateReader.getHistoryForKeyword(keyword, startDate, endDateExclusive),
     threadsEngagementReader.getForDateRange(startDate, endDateExclusive),
-    threadsSentimentReader.getForDateRange(startDate, endDateExclusive),
   ]);
 
   const keywordThreadsRows = threadsRows.filter((r) => r.keyword === keyword);
-  const keywordSentimentRows = sentimentRows.filter((r) => r.keyword === keyword);
 
-  return computeTopicDetail(keyword, candidateHistory, keywordThreadsRows, keywordSentimentRows, dates);
+  return computeTopicDetail(keyword, candidateHistory, keywordThreadsRows, dates);
 }

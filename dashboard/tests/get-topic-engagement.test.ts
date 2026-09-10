@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { enrichHotTopicsWithThreadsData } from '../lib/get-topic-engagement';
 import { FakeThreadsEngagementReader } from './fakes/fake-threads-engagement-reader';
-import { FakeThreadsSentimentReader } from './fakes/fake-threads-sentiment-reader';
 import type { HotTopicRow } from '../lib/hot-topics';
 
 function hotTopicRow(overrides: Partial<HotTopicRow> = {}): HotTopicRow {
@@ -39,11 +38,8 @@ describe('enrichHotTopicsWithThreadsData', () => {
         post_count: 1,
       },
     ]);
-    const sentimentReader = new FakeThreadsSentimentReader([
-      { date: '2026-08-24', keyword: 'bitcoin', sentiment: 'positive' },
-    ]);
 
-    const result = await enrichHotTopicsWithThreadsData(bySource, engagementReader, sentimentReader, '2026-08-24');
+    const result = await enrichHotTopicsWithThreadsData(bySource, engagementReader, '2026-08-24');
 
     expect(result.google_trends[0].engagement?.totalEngagement).toBe(10);
     expect(result.youtube[0].engagement).toBeNull();
@@ -72,9 +68,8 @@ describe('enrichHotTopicsWithThreadsData', () => {
         post_count: 1,
       },
     ]);
-    const sentimentReader = new FakeThreadsSentimentReader([]);
 
-    const result = await enrichHotTopicsWithThreadsData(bySource, engagementReader, sentimentReader, '2026-08-24');
+    const result = await enrichHotTopicsWithThreadsData(bySource, engagementReader, '2026-08-24');
 
     expect(result.google_trends[0].engagement).toBeNull();
   });

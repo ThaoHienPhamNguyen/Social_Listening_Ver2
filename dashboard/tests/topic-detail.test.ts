@@ -34,7 +34,7 @@ function threadsRow(overrides: Partial<ThreadsEngagementDaily> = {}): ThreadsEng
 
 describe('computeTopicDetail', () => {
   it('returns null when there is no data at all for this keyword', () => {
-    const result = computeTopicDetail('nonexistent', [], [], [], ['2026-08-18']);
+    const result = computeTopicDetail('nonexistent', [], [], ['2026-08-18']);
     expect(result).toBeNull();
   });
 
@@ -42,7 +42,6 @@ describe('computeTopicDetail', () => {
     const result = computeTopicDetail(
       'bitcoin',
       [candidate({ date: '2026-08-18', metric_value: 10, growth_rate: 0.5 })],
-      [],
       [],
       ['2026-08-17', '2026-08-18']
     );
@@ -60,7 +59,6 @@ describe('computeTopicDetail', () => {
         candidate({ id: 'b', date: '2026-08-18', metric_value: 20, growth_rate: 0.9, source: 'youtube' }),
       ],
       [],
-      [],
       ['2026-08-18']
     );
     expect(result?.trendingScoreTimeline[0].score).toBe(90);
@@ -70,8 +68,8 @@ describe('computeTopicDetail', () => {
     const newestNoCategory = candidate({ date: '2026-08-19', category_hint: [] });
     const olderWithCategory = candidate({ date: '2026-08-18', category_hint: ['tai_chinh'] });
 
-    const forward = computeTopicDetail('bitcoin', [newestNoCategory, olderWithCategory], [], [], []);
-    const reversed = computeTopicDetail('bitcoin', [olderWithCategory, newestNoCategory], [], [], []);
+    const forward = computeTopicDetail('bitcoin', [newestNoCategory, olderWithCategory], [], []);
+    const reversed = computeTopicDetail('bitcoin', [olderWithCategory, newestNoCategory], [], []);
 
     expect(forward?.category).toBe('tai_chinh');
     expect(reversed?.category).toBe('tai_chinh');
@@ -86,7 +84,6 @@ describe('computeTopicDetail', () => {
         candidate({ date: '2026-08-20', source: 'rss' }),
       ],
       [],
-      [],
       []
     );
     expect(result?.sources).toEqual(['rss', 'youtube']);
@@ -100,31 +97,11 @@ describe('computeTopicDetail', () => {
         threadsRow({ date: '2026-08-18', total_like_count: 10, post_count: 1 }),
         threadsRow({ date: '2026-08-18', total_like_count: 5, post_count: 1 }),
       ],
-      [],
       ['2026-08-17', '2026-08-18']
     );
     expect(result?.engagementTimeline).toEqual([
       { date: '2026-08-17', totalEngagement: 0, postCount: 0 },
       { date: '2026-08-18', totalEngagement: 15, postCount: 2 },
-    ]);
-  });
-
-  it('counts sentiment per day, ignoring null sentiment, defaulting to zero counts on days with none', () => {
-    const result = computeTopicDetail(
-      'bitcoin',
-      [candidate({ date: '2026-08-18' })],
-      [],
-      [
-        { keyword: 'bitcoin', date: '2026-08-18', sentiment: 'positive' },
-        { keyword: 'bitcoin', date: '2026-08-18', sentiment: 'positive' },
-        { keyword: 'bitcoin', date: '2026-08-18', sentiment: 'negative' },
-        { keyword: 'bitcoin', date: '2026-08-18', sentiment: null },
-      ],
-      ['2026-08-17', '2026-08-18']
-    );
-    expect(result?.sentimentTimeline).toEqual([
-      { date: '2026-08-17', positive: 0, negative: 0, neutral: 0 },
-      { date: '2026-08-18', positive: 2, negative: 1, neutral: 0 },
     ]);
   });
 });

@@ -1,10 +1,8 @@
 import { createServerSupabaseClient } from '../../../lib/supabase';
 import { SupabaseCandidateTopicsReader } from '../../../lib/candidate-topics-reader';
 import { SupabaseThreadsEngagementReader } from '../../../lib/threads-engagement-reader';
-import { SupabaseThreadsSentimentReader } from '../../../lib/threads-sentiment-reader';
 import { getTopicDetail } from '../../../lib/get-topic-detail';
 import type { TopicDetailData } from '../../../lib/topic-detail';
-import { computeSentimentIndex } from '../../../lib/topic-engagement';
 import { CATEGORIES } from '../../../lib/categories';
 import { SOURCE_LABELS } from '../../../lib/hot-topic-format';
 import { SingleLineChart } from '../../../components/SingleLineChart';
@@ -23,7 +21,6 @@ async function loadTopicDetail(keyword: string): Promise<TopicDetailData | null 
     return await getTopicDetail(
       candidateReader,
       new SupabaseThreadsEngagementReader(client),
-      new SupabaseThreadsSentimentReader(client),
       keyword,
       latestDate
     );
@@ -101,17 +98,6 @@ export default async function TopicDetailPage({ params }: { params: Promise<{ ke
               date: p.date,
               value: p.postCount === 0 ? null : p.totalEngagement,
             }))}
-            color="var(--color-brand)"
-          />
-        </div>
-
-        <div className="bg-surface border border-line rounded-card shadow-card p-6">
-          <h2 className="text-base font-bold text-ink mb-4">
-            Sentiment Threads — 7 ngày qua
-            <MetricTooltip text={METRIC_TOOLTIPS.topicDetailSentiment} />
-          </h2>
-          <SingleLineChart
-            data={detail.sentimentTimeline.map((p) => ({ date: p.date, value: computeSentimentIndex(p) }))}
             color="var(--color-brand)"
           />
         </div>

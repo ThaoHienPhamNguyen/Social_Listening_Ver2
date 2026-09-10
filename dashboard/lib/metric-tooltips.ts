@@ -16,8 +16,6 @@ export const METRIC_TOOLTIPS = {
   gainersLosers: 'So sánh engagement Threads theo từ khóa giữa 7 ngày gần nhất và 7 ngày trước đó, xếp theo % thay đổi.',
   topicDetailTrendingScore: 'Trending Score của từ khóa này theo từng ngày trong 7 ngày qua.',
   topicDetailEngagement: 'Tổng lượt tương tác Threads của từ khóa này theo từng ngày.',
-  topicDetailSentiment: 'Chỉ số sentiment (-100..+100) của từ khóa này theo từng ngày, tính trên các bài Threads đã phân loại.',
-  sentimentByCategory: 'Tỉ lệ Tích cực/Trung lập/Tiêu cực của các bài Threads + Facebook đã phân loại, tính riêng cho mỗi lĩnh vực.',
   buzzByPlatform: '% số bài viết theo từng nền tảng (Báo điện tử/Threads/Facebook) trong khoảng thời gian đang xem.',
   shareOfVoice: '% Buzz Volume thuộc về mỗi lĩnh vực trong ngày — cùng công thức với biểu đồ Phân bổ lĩnh vực trên Overview.',
   sectorBuzzVolume: 'Tổng số bài báo + bài Threads + bài Facebook thuộc lĩnh vực này trong 7 ngày qua.',

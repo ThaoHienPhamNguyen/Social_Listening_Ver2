@@ -1,6 +1,6 @@
 import { computeTrendingScore } from './hot-topics';
 import { threadsEngagementTotal } from './topic-engagement';
-import type { CandidateTopic, ThreadsEngagementDaily, SentimentLabel } from './types';
+import type { CandidateTopic, ThreadsEngagementDaily } from './types';
 
 export interface TopicDetailData {
   keyword: string;
@@ -8,7 +8,6 @@ export interface TopicDetailData {
   sources: CandidateTopic['source'][];
   trendingScoreTimeline: { date: string; score: number | null }[];
   engagementTimeline: { date: string; totalEngagement: number; postCount: number }[];
-  sentimentTimeline: { date: string; positive: number; negative: number; neutral: number }[];
 }
 
 // Order-independent category resolution — same approach as topic-movers.ts's
@@ -46,7 +45,6 @@ export function computeTopicDetail(
   keyword: string,
   candidateHistory: CandidateTopic[],
   threadsEngagementRows: ThreadsEngagementDaily[],
-  threadsSentimentRows: { keyword: string; date: string; sentiment: SentimentLabel | null }[],
   dates: string[]
 ): TopicDetailData | null {
   if (candidateHistory.length === 0 && threadsEngagementRows.length === 0) {
@@ -69,23 +67,11 @@ export function computeTopicDetail(
     };
   });
 
-  const sentimentTimeline = dates.map((date) => {
-    const dayRows = threadsSentimentRows.filter((r) => r.date === date);
-    const counts = { positive: 0, negative: 0, neutral: 0 };
-    for (const r of dayRows) {
-      if (r.sentiment === 'positive' || r.sentiment === 'negative' || r.sentiment === 'neutral') {
-        counts[r.sentiment] += 1;
-      }
-    }
-    return { date, ...counts };
-  });
-
   return {
     keyword,
     category: resolveCategory(candidateHistory),
     sources: resolveSources(candidateHistory),
     trendingScoreTimeline,
     engagementTimeline,
-    sentimentTimeline,
   };
 }
