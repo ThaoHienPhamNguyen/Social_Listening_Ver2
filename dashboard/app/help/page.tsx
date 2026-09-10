@@ -49,11 +49,6 @@ export default function HelpPage() {
             Tổng lượt tương tác (like + reply/comment + repost + quote + share) cộng dồn trên các bài
             Threads và Facebook — không tính lượt xem, và không phải số người xem thực tế.
           </MetricItem>
-          <MetricItem name="Sentiment Score">
-            Mức độ tích cực/tiêu cực chung của các bài Threads + Facebook đã được phân loại, tính trên ngày
-            gần nhất (thang -100 đến +100). Số dương nghĩa là tích cực nhiều hơn tiêu cực; số âm thì ngược
-            lại. 0 là cân bằng, hoặc chưa có bài nào được phân loại thì hiện "—".
-          </MetricItem>
           <MetricItem name="Buzz Trend — 7 ngày qua">
             Biểu đồ đường thể hiện Buzz Volume mỗi ngày, tách theo 3 lĩnh vực (Tài chính/Giải trí/Du lịch)
             — cùng công thức trọng số với biểu đồ Phân bổ lĩnh vực bên cạnh. Xem đầy đủ hơn ở trang
@@ -80,10 +75,6 @@ export default function HelpPage() {
             Gộp tất cả từ khóa đang shortlist từ mọi nguồn/lĩnh vực vào 1 bảng duy nhất, xếp theo Trending
             Score giảm dần — có thể lọc theo lĩnh vực bằng các tab phía trên bảng.
           </MetricItem>
-          <MetricItem name="Sentiment badge">
-            Chỉ số sentiment (thang -100..+100) của từ khóa đó trên Threads, tính trên ngày gần nhất — chỉ
-            hiện khi đã có bài được phân loại.
-          </MetricItem>
         </GuideSection>
 
         <GuideSection title="Analytics">
@@ -108,8 +99,7 @@ export default function HelpPage() {
             thời điểm được phát hiện gần nhất.
           </MetricItem>
           <MetricItem name="Facebook">
-            Số bài + tổng lượt tương tác từ các page Facebook thuộc lĩnh vực này trong ngày, kèm tỷ lệ %
-            sentiment Tích cực/Trung lập/Tiêu cực của ngày gần nhất.
+            Số bài + tổng lượt tương tác từ các page Facebook thuộc lĩnh vực này trong ngày.
           </MetricItem>
           <MetricItem name="Bài báo gần đây">
             Các bài báo mới nhất thuộc lĩnh vực này, từ các nguồn RSS đã kết nối.
@@ -126,30 +116,10 @@ export default function HelpPage() {
             được ghi nhận sẽ để trống trên biểu đồ (không vẽ thành 0), để không nhầm lẫn "không có dữ liệu"
             với "có dữ liệu nhưng bằng 0".
           </MetricItem>
-          <MetricItem name="Sentiment Threads — 7 ngày qua">
-            Chỉ số sentiment (-100..+100) của từ khóa này theo từng ngày, tính trên các bài Threads đã phân
-            loại trong ngày đó.
-          </MetricItem>
           <MetricItem name="Lưu ý về phạm vi dữ liệu">
             Trang này chỉ hiển thị số liệu tổng hợp theo ngày (không có danh sách bài viết gốc), và chỉ
-            tính engagement/sentiment từ Threads — vì Facebook và bài báo không được gắn theo từng từ khóa
-            riêng trong hệ thống này.
-          </MetricItem>
-        </GuideSection>
-
-        <GuideSection
-          title="Sentiment được phân tích như thế nào?"
-          subtitle="Cách hệ thống quyết định 1 bài đăng là Tích cực, Trung lập hay Tiêu cực"
-        >
-          <MetricItem name="1 bước — AI đọc trực tiếp nội dung">
-            Với mỗi bài Threads/Facebook mới thu thập, hệ thống gửi nội dung bài (đã rút gọn) cho một mô
-            hình AI, yêu cầu phân loại thẳng vào 1 trong 3 nhãn: Tích cực, Trung lập, hoặc Tiêu cực — không
-            qua bước lọc từ khóa trung gian nào.
-          </MetricItem>
-          <MetricItem name="Khi phân loại thất bại">
-            Nếu lần gọi AI cho một nhóm bài bị lỗi, các bài đó tạm thời chưa có sentiment (không hiện badge
-            sentiment) và sẽ được thử phân loại lại ở lần chạy kế tiếp — hệ thống không dùng phương án dự
-            phòng nào khác thay AI.
+            tính engagement từ Threads — vì Facebook và bài báo không được gắn theo từng từ khóa riêng trong
+            hệ thống này.
           </MetricItem>
         </GuideSection>
       </main>
