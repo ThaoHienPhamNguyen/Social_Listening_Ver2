@@ -1,28 +1,46 @@
 import type { FacebookPageDataRepository } from './lib/facebook-page-data-repository';
+import type { CandidateTopicRepository } from './lib/candidate-topic-repository';
 import type { FacebookPageScrapeClient } from './lib/apify-facebook-client';
-import type { FacebookPageData } from './types';
+import type { FacebookPageData, CandidateTopic, Category } from './types';
+import { FACEBOOK_SEED_GROUPS, type FacebookSeedGroup } from './lib/facebook-seed-groups';
 import { FACEBOOK_SEED_PAGES, type FacebookSeedPage } from './lib/facebook-seed-pages';
+import { aggregateFacebookKeywords } from './lib/aggregate-facebook-keywords';
+import { extractKeywords } from './lib/keyword-extractor';
 
 export interface DeepCrawlFacebookDeps {
   socialRepo: FacebookPageDataRepository;
-  client: FacebookPageScrapeClient;
-  // Injectable so tests use a small controlled list instead of depending on
-  // the real production seed list — defaults to FACEBOOK_SEED_PAGES.
+  candidateRepo: Pick<CandidateTopicRepository, 'upsertCandidates'>;
+  groupsClient: FacebookPageScrapeClient;
+  pagesClient: FacebookPageScrapeClient;
+  seedGroups?: FacebookSeedGroup[];
   seedPages?: FacebookSeedPage[];
   now?: () => Date;
 }
 
 export interface DeepCrawlFacebookResult {
   skipped: boolean;
-  pagesAttempted: number;
+  seedsAttempted: number;
+  candidatesUpserted: number;
   postsUpserted: number;
   errors: string[];
+}
+
+interface Seed {
+  url: string;
+  category: Category;
+  client: FacebookPageScrapeClient;
 }
 
 export async function runDeepCrawlFacebook(deps: DeepCrawlFacebookDeps): Promise<DeepCrawlFacebookResult> {
   const now = deps.now ?? (() => new Date());
   const date = now().toISOString().slice(0, 10);
-  const result: DeepCrawlFacebookResult = { skipped: false, pagesAttempted: 0, postsUpserted: 0, errors: [] };
+  const result: DeepCrawlFacebookResult = {
+    skipped: false,
+    seedsAttempted: 0,
+    candidatesUpserted: 0,
+    postsUpserted: 0,
+    errors: [],
+  };
 
   // Idempotency guard — same reasoning as deep-crawl.ts (2b): robust against
   // cron schedule changes and repeated workflow_dispatch runs on the same
@@ -33,42 +51,61 @@ export async function runDeepCrawlFacebook(deps: DeepCrawlFacebookDeps): Promise
     return result;
   }
 
-  const seedPages = deps.seedPages ?? FACEBOOK_SEED_PAGES;
-  result.pagesAttempted = seedPages.length;
+  const seeds: Seed[] = [
+    ...(deps.seedGroups ?? FACEBOOK_SEED_GROUPS).map((g) => ({ ...g, client: deps.groupsClient })),
+    ...(deps.seedPages ?? FACEBOOK_SEED_PAGES).map((p) => ({ ...p, client: deps.pagesClient })),
+  ];
+  result.seedsAttempted = seeds.length;
 
-  for (const page of seedPages) {
+  for (const seed of seeds) {
     try {
-      const posts = await deps.client.scrapePage(page.url);
-      // Per-page visibility for the first live run — without this, a page
-      // that returns 0 posts because of a real actor failure/wrong field
-      // names (see apify-facebook-client.ts) is indistinguishable in the
-      // job's log output from a page that legitimately has no posts.
-      console.log(`${page.url}: ${posts.length} posts`);
+      const posts = await seed.client.scrapePage(seed.url);
+      // Per-seed visibility for the first live run — without this, a
+      // group/page that returns 0 posts because of a real actor
+      // failure/wrong field names is indistinguishable in the job's log
+      // output from a seed that legitimately has no posts.
+      console.log(`${seed.url}: ${posts.length} posts`);
       // Dedupe by post_url before upserting — same reason as deep-crawl.ts
-      // (2b): every row in this batch shares page_url, so a duplicated
-      // post_url would collide on the same unique(page_url,post_url)
-      // conflict key within one upsert statement and make Postgres reject
-      // the entire statement.
-      const dedupedPosts = [...new Map(posts.map((p) => [p.post_url, p])).values()];
-      // Spread ...post first so page_url/category/date (set by this job,
-      // not the actor) can't be silently overwritten by a future
-      // FacebookPost field.
-      const rows: Partial<FacebookPageData>[] = dedupedPosts.map((p) => ({
-        ...p,
-        page_url: page.url,
-        category: page.category,
-        date,
-      }));
-      const { error, count } = await deps.socialRepo.upsertPosts(rows);
-      if (error) {
-        result.errors.push(`upsert failed for "${page.url}": ${error}`);
+      // (2b): every row for this seed shares page_url, so a duplicated
+      // post_url would collide on the same unique conflict key within one
+      // upsert statement and make Postgres reject the entire statement.
+      // Drop posts with no text — nothing to extract keywords from.
+      const dedupedPosts = [...new Map(posts.map((p) => [p.post_url, p])).values()].filter((p) => p.text_content);
+
+      const socialRows: Partial<FacebookPageData>[] = [];
+      for (const p of dedupedPosts) {
+        for (const keyword of new Set(extractKeywords(p.text_content))) {
+          socialRows.push({ ...p, keyword, page_url: seed.url, category: seed.category, date });
+        }
+      }
+      const { error: socialError, count: socialCount } = await deps.socialRepo.upsertPosts(socialRows);
+      if (socialError) {
+        result.errors.push(`post upsert failed for "${seed.url}": ${socialError}`);
       } else {
-        result.postsUpserted += count;
+        result.postsUpserted += socialCount;
+      }
+
+      const candidates = aggregateFacebookKeywords(dedupedPosts, seed.category);
+      const candidateRows: Partial<CandidateTopic>[] = candidates.map((c) => ({
+        source: 'facebook',
+        keyword: c.keyword,
+        date,
+        metric_value: c.metric_value,
+        growth_rate: null,
+        category_hint: c.knownCategories ?? [seed.category],
+      }));
+      const { error: candidateError, count: candidateCount } = await deps.candidateRepo.upsertCandidates(
+        candidateRows
+      );
+      if (candidateError) {
+        result.errors.push(`candidate upsert failed for "${seed.url}": ${candidateError}`);
+      } else {
+        result.candidatesUpserted += candidateCount;
       }
     } catch (err) {
-      // One page's Apify failure must not abort the remaining pages — same
-      // isolation principle used throughout this project.
-      result.errors.push(`crawl failed for "${page.url}": ${(err as Error).message}`);
+      // One seed's failure must not abort the rest — same isolation
+      // principle used throughout this codebase.
+      result.errors.push(`crawl failed for "${seed.url}": ${(err as Error).message}`);
     }
   }
 

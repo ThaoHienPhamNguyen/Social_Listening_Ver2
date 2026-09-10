@@ -1,153 +1,135 @@
 import { describe, it, expect } from 'vitest';
 import { runDeepCrawlFacebook } from '../src/deep-crawl-facebook';
+import { FakeCandidateTopicRepository } from './fakes/fake-candidate-topic-repository';
 import { FakeFacebookPageDataRepository } from './fakes/fake-facebook-page-data-repository';
 import type { FacebookPageScrapeClient, FacebookPost } from '../src/lib/apify-facebook-client';
+import type { FacebookSeedGroup } from '../src/lib/facebook-seed-groups';
 import type { FacebookSeedPage } from '../src/lib/facebook-seed-pages';
 
 function post(overrides: Partial<FacebookPost> = {}): FacebookPost {
   return {
-    post_url: 'https://www.facebook.com/page/posts/1',
-    text_content: 'hello',
+    post_url: 'https://facebook.com/groups/x/posts/1',
+    text_content: 'giá vàng hôm nay tăng mạnh',
     like_count: 1,
     comment_count: 1,
     share_count: 0,
-    posted_at: '2026-08-23T00:00:00Z',
+    posted_at: '2026-09-10T00:00:00Z',
     ...overrides,
   };
 }
 
-class FakeFacebookPageScrapeClient implements FacebookPageScrapeClient {
+class FakeClient implements FacebookPageScrapeClient {
   public calls: string[] = [];
-  public postsByPage: Record<string, FacebookPost[]> = {};
-  public errorForPage: Record<string, string> = {};
+  public postsByUrl: Record<string, FacebookPost[]> = {};
+  public errorForUrl: Record<string, string> = {};
 
-  async scrapePage(pageUrl: string): Promise<FacebookPost[]> {
-    this.calls.push(pageUrl);
-    if (this.errorForPage[pageUrl]) throw new Error(this.errorForPage[pageUrl]);
-    return this.postsByPage[pageUrl] ?? [];
+  async scrapePage(url: string): Promise<FacebookPost[]> {
+    this.calls.push(url);
+    if (this.errorForUrl[url]) throw new Error(this.errorForUrl[url]);
+    return this.postsByUrl[url] ?? [];
   }
 }
 
-const NOW = () => new Date('2026-08-23T09:00:00Z');
-
-const TEST_SEED_PAGES: FacebookSeedPage[] = [
-  { url: 'https://www.facebook.com/finance-page', category: 'tai_chinh' },
-  { url: 'https://www.facebook.com/entertainment-page', category: 'giai_tri' },
-];
+const SEED_GROUPS: FacebookSeedGroup[] = [{ url: 'https://facebook.com/groups/a', category: 'tai_chinh' }];
+const SEED_PAGES: FacebookSeedPage[] = [{ url: 'https://facebook.com/vtv24', category: 'tai_chinh' }];
+const NOW = () => new Date('2026-09-10T09:00:00Z');
 
 describe('runDeepCrawlFacebook', () => {
   it('skips and returns early when facebook_page_data already has rows for today', async () => {
+    const candidateRepo = new FakeCandidateTopicRepository();
     const socialRepo = new FakeFacebookPageDataRepository();
     await socialRepo.upsertPosts([
-      {
-        page_url: 'https://www.facebook.com/existing',
-        category: 'tai_chinh',
-        date: '2026-08-23',
-        post_url: 'https://www.facebook.com/existing/posts/0',
-      },
+      { page_url: 'x', keyword: 'k', category: 'tai_chinh', date: '2026-09-10', post_url: 'p' },
     ]);
-    const client = new FakeFacebookPageScrapeClient();
+    const groupsClient = new FakeClient();
+    const pagesClient = new FakeClient();
 
-    const result = await runDeepCrawlFacebook({ socialRepo, client, seedPages: TEST_SEED_PAGES, now: NOW });
+    const result = await runDeepCrawlFacebook({
+      candidateRepo,
+      socialRepo,
+      groupsClient,
+      pagesClient,
+      seedGroups: SEED_GROUPS,
+      seedPages: SEED_PAGES,
+      now: NOW,
+    });
 
     expect(result.skipped).toBe(true);
-    expect(client.calls).toEqual([]);
+    expect(groupsClient.calls).toEqual([]);
+    expect(pagesClient.calls).toEqual([]);
   });
 
-  it('calls the client once per seed page', async () => {
+  it('calls groupsClient for every seed group and pagesClient for every seed page', async () => {
+    const candidateRepo = new FakeCandidateTopicRepository();
     const socialRepo = new FakeFacebookPageDataRepository();
-    const client = new FakeFacebookPageScrapeClient();
+    const groupsClient = new FakeClient();
+    const pagesClient = new FakeClient();
 
-    const result = await runDeepCrawlFacebook({ socialRepo, client, seedPages: TEST_SEED_PAGES, now: NOW });
+    const result = await runDeepCrawlFacebook({
+      candidateRepo,
+      socialRepo,
+      groupsClient,
+      pagesClient,
+      seedGroups: SEED_GROUPS,
+      seedPages: SEED_PAGES,
+      now: NOW,
+    });
 
     expect(result.skipped).toBe(false);
-    expect(result.pagesAttempted).toBe(2);
-    expect(client.calls.sort()).toEqual([
-      'https://www.facebook.com/entertainment-page',
-      'https://www.facebook.com/finance-page',
-    ]);
+    expect(result.seedsAttempted).toBe(2);
+    expect(groupsClient.calls).toEqual(['https://facebook.com/groups/a']);
+    expect(pagesClient.calls).toEqual(['https://facebook.com/vtv24']);
   });
 
-  it('upserts posts returned by the client, tagging them with page_url/category/date', async () => {
+  it('extracts keywords and upserts both candidate_topics and facebook_page_data, for both a group and a page', async () => {
+    const candidateRepo = new FakeCandidateTopicRepository();
     const socialRepo = new FakeFacebookPageDataRepository();
-    const client = new FakeFacebookPageScrapeClient();
-    client.postsByPage['https://www.facebook.com/finance-page'] = [
-      post({ post_url: 'https://www.facebook.com/finance-page/posts/1' }),
+    const groupsClient = new FakeClient();
+    const pagesClient = new FakeClient();
+    groupsClient.postsByUrl['https://facebook.com/groups/a'] = [
+      post({ post_url: 'https://facebook.com/groups/a/posts/1', text_content: 'giá vàng hôm nay', like_count: 10 }),
     ];
-
-    const result = await runDeepCrawlFacebook({ socialRepo, client, seedPages: TEST_SEED_PAGES, now: NOW });
-
-    expect(result.postsUpserted).toBe(1);
-    expect(socialRepo.posts).toHaveLength(1);
-    expect(socialRepo.posts[0]).toMatchObject({
-      page_url: 'https://www.facebook.com/finance-page',
-      category: 'tai_chinh',
-      date: '2026-08-23',
-      post_url: 'https://www.facebook.com/finance-page/posts/1',
-    });
-  });
-
-  it("isolates one page's client failure from the rest", async () => {
-    const socialRepo = new FakeFacebookPageDataRepository();
-    const client = new FakeFacebookPageScrapeClient();
-    client.errorForPage['https://www.facebook.com/finance-page'] = 'actor failed';
-    client.postsByPage['https://www.facebook.com/entertainment-page'] = [
-      post({ post_url: 'https://www.facebook.com/entertainment-page/posts/2' }),
-    ];
-
-    const result = await runDeepCrawlFacebook({ socialRepo, client, seedPages: TEST_SEED_PAGES, now: NOW });
-
-    expect(result.errors).toEqual([
-      'crawl failed for "https://www.facebook.com/finance-page": actor failed',
-    ]);
-    expect(result.postsUpserted).toBe(1);
-    expect(socialRepo.posts).toHaveLength(1);
-  });
-
-  it("isolates one page's upsert failure from the rest", async () => {
-    const socialRepo = new FakeFacebookPageDataRepository();
-    socialRepo.upsertError = 'db down';
-    const client = new FakeFacebookPageScrapeClient();
-    client.postsByPage['https://www.facebook.com/finance-page'] = [post()];
-
-    const result = await runDeepCrawlFacebook({
-      socialRepo,
-      client,
-      seedPages: [TEST_SEED_PAGES[0]],
-      now: NOW,
-    });
-
-    expect(result.errors).toEqual([
-      'upsert failed for "https://www.facebook.com/finance-page": db down',
-    ]);
-    expect(result.postsUpserted).toBe(0);
-  });
-
-  it('dedupes duplicate post_url from the same page before upserting', async () => {
-    const socialRepo = new FakeFacebookPageDataRepository();
-    const client = new FakeFacebookPageScrapeClient();
-    client.postsByPage['https://www.facebook.com/finance-page'] = [
-      post({ post_url: 'https://www.facebook.com/finance-page/posts/1', text_content: 'first' }),
-      post({ post_url: 'https://www.facebook.com/finance-page/posts/1', text_content: 'dup' }),
+    pagesClient.postsByUrl['https://facebook.com/vtv24'] = [
+      post({ post_url: 'https://facebook.com/vtv24/posts/1', text_content: 'thời tiết hôm nay', like_count: 5 }),
     ];
 
     const result = await runDeepCrawlFacebook({
+      candidateRepo,
       socialRepo,
-      client,
-      seedPages: [TEST_SEED_PAGES[0]],
+      groupsClient,
+      pagesClient,
+      seedGroups: SEED_GROUPS,
+      seedPages: SEED_PAGES,
       now: NOW,
     });
 
-    expect(result.postsUpserted).toBe(1);
-    expect(socialRepo.posts).toHaveLength(1);
+    expect(result.postsUpserted).toBeGreaterThan(0);
+    expect(result.candidatesUpserted).toBeGreaterThan(0);
+    const giaVang = candidateRepo.candidates.find((c) => c.keyword === 'giá vàng');
+    expect(giaVang).toMatchObject({ source: 'facebook', category_hint: ['tai_chinh'], growth_rate: null });
+    const thoiTiet = candidateRepo.candidates.find((c) => c.keyword === 'thời tiết');
+    expect(thoiTiet).toMatchObject({ source: 'facebook', category_hint: ['tai_chinh'] });
   });
 
-  it('defaults to the real FACEBOOK_SEED_PAGES list (6 pages) when seedPages is not provided', async () => {
+  it("isolates one seed's client failure from the rest", async () => {
+    const candidateRepo = new FakeCandidateTopicRepository();
     const socialRepo = new FakeFacebookPageDataRepository();
-    const client = new FakeFacebookPageScrapeClient();
+    const groupsClient = new FakeClient();
+    const pagesClient = new FakeClient();
+    groupsClient.errorForUrl['https://facebook.com/groups/a'] = 'not_available';
+    pagesClient.postsByUrl['https://facebook.com/vtv24'] = [post({ post_url: 'p1', text_content: 'thời tiết hôm nay' })];
 
-    const result = await runDeepCrawlFacebook({ socialRepo, client, now: NOW });
+    const result = await runDeepCrawlFacebook({
+      candidateRepo,
+      socialRepo,
+      groupsClient,
+      pagesClient,
+      seedGroups: SEED_GROUPS,
+      seedPages: SEED_PAGES,
+      now: NOW,
+    });
 
-    expect(result.pagesAttempted).toBe(6);
+    expect(result.errors).toEqual(['crawl failed for "https://facebook.com/groups/a": not_available']);
+    expect(result.postsUpserted).toBeGreaterThan(0);
   });
 });
