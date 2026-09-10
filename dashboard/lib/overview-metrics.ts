@@ -1,5 +1,5 @@
-import type { CandidateTopic, FacebookEngagementDaily, SentimentLabel, ThreadsEngagementDaily } from './types';
-import { countAllSentiment, computeSentimentIndex, threadsEngagementTotal } from './topic-engagement';
+import type { CandidateTopic, FacebookEngagementDaily, ThreadsEngagementDaily } from './types';
+import { threadsEngagementTotal } from './topic-engagement';
 import { facebookEngagementTotal } from './facebook-summary';
 import { CATEGORIES } from './categories';
 
@@ -7,7 +7,6 @@ export interface OverviewMetrics {
   buzzVolume: number;
   topicsTrending: number;
   audienceScale: number;
-  sentimentScore: number | null;
 }
 
 export interface DonutSegment {
@@ -20,8 +19,7 @@ export function computeOverviewMetrics(
   candidates: CandidateTopic[],
   articles: { categories: string[] }[],
   threadsRows: ThreadsEngagementDaily[],
-  facebookRows: FacebookEngagementDaily[],
-  sentimentRows: { sentiment: SentimentLabel | null }[]
+  facebookRows: FacebookEngagementDaily[]
 ): OverviewMetrics {
   const buzzVolume =
     articles.length +
@@ -36,9 +34,7 @@ export function computeOverviewMetrics(
     threadsRows.reduce((sum, r) => sum + threadsEngagementTotal(r), 0) +
     facebookRows.reduce((sum, r) => sum + facebookEngagementTotal(r), 0);
 
-  const sentimentScore = computeSentimentIndex(countAllSentiment(sentimentRows));
-
-  return { buzzVolume, topicsTrending, audienceScale, sentimentScore };
+  return { buzzVolume, topicsTrending, audienceScale };
 }
 
 export function computeKpiDelta(

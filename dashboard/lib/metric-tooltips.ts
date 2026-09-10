@@ -8,8 +8,6 @@ export const METRIC_TOOLTIPS = {
   topicsTrending: 'Số từ khóa khác nhau đang được shortlist bởi discovery layer trong ngày.',
   audienceScale:
     'Tổng lượt tương tác (like + reply + repost + quote + share) của các bài Threads và Facebook — không tính lượt xem.',
-  sentimentScore:
-    'Mức độ tích cực/tiêu cực chung của các bài Threads + Facebook đã phân loại, thang -100 đến +100.',
   sectorShare: '% Buzz Volume thuộc về mỗi lĩnh vực (bài đa lĩnh vực được chia đều cho các lĩnh vực đó).',
   topTrending: 'Xếp hạng theo Trending Score — mức tăng trưởng so với baseline gần đây của discovery layer.',
   trendingScore:
@@ -22,7 +20,6 @@ export const METRIC_TOOLTIPS = {
   sentimentByCategory: 'Tỉ lệ Tích cực/Trung lập/Tiêu cực của các bài Threads + Facebook đã phân loại, tính riêng cho mỗi lĩnh vực.',
   buzzByPlatform: '% số bài viết theo từng nền tảng (Báo điện tử/Threads/Facebook) trong khoảng thời gian đang xem.',
   shareOfVoice: '% Buzz Volume thuộc về mỗi lĩnh vực trong ngày — cùng công thức với biểu đồ Phân bổ lĩnh vực trên Overview.',
-  sentimentTrend: 'Số bài Threads + Facebook đã phân loại sentiment mỗi ngày, theo Tích cực/Trung lập/Tiêu cực.',
   sectorBuzzVolume: 'Tổng số bài báo + bài Threads + bài Facebook thuộc lĩnh vực này trong 7 ngày qua.',
   sectorActiveTopics: 'Số từ khóa khác nhau đang được shortlist trong lĩnh vực này, 7 ngày qua.',
 } as const;

@@ -4,7 +4,6 @@ import { SupabaseArticlesReader } from '../lib/articles-reader';
 import { SupabaseThreadsEngagementReader } from '../lib/threads-engagement-reader';
 import { SupabaseThreadsSentimentReader } from '../lib/threads-sentiment-reader';
 import { SupabaseFacebookEngagementReader } from '../lib/facebook-engagement-reader';
-import { SupabaseFacebookSentimentReader } from '../lib/facebook-sentiment-reader';
 import { getHotTopics, type HotTopicsResult } from '../lib/get-hot-topics';
 import { enrichHotTopicsWithThreadsData } from '../lib/get-topic-engagement';
 import { withoutEngagement } from '../lib/topic-engagement';
@@ -83,8 +82,6 @@ async function loadOverviewMetrics(date: string | null): Promise<(OverviewMetric
       new SupabaseArticlesReader(client),
       new SupabaseThreadsEngagementReader(client),
       new SupabaseFacebookEngagementReader(client),
-      new SupabaseThreadsSentimentReader(client),
-      new SupabaseFacebookSentimentReader(client),
       date
     );
     return { ...result, date };

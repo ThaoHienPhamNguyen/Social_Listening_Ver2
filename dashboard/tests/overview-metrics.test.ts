@@ -50,8 +50,7 @@ describe('computeOverviewMetrics', () => {
       [],
       [{ categories: ['tai_chinh'] }, { categories: [] }],
       [threadsRow({ post_count: 2 })],
-      [facebookRow({ post_count: 3 })],
-      []
+      [facebookRow({ post_count: 3 })]
     );
     expect(result.buzzVolume).toBe(7); // 2 articles + 2 threads posts + 3 facebook posts
   });
@@ -65,31 +64,14 @@ describe('computeOverviewMetrics', () => {
       ],
       [],
       [],
-      [],
       []
     );
     expect(result.topicsTrending).toBe(1);
   });
 
   it('sums audience scale from Threads + Facebook engagement totals', () => {
-    const result = computeOverviewMetrics([], [], [threadsRow()], [facebookRow()], []);
+    const result = computeOverviewMetrics([], [], [threadsRow()], [facebookRow()]);
     expect(result.audienceScale).toBe(23); // 16 (threads) + 7 (facebook)
-  });
-
-  it('computes an overall sentiment score across all rows regardless of keyword/category', () => {
-    const result = computeOverviewMetrics(
-      [],
-      [],
-      [],
-      [],
-      [{ sentiment: 'positive' }, { sentiment: 'positive' }, { sentiment: 'negative' }]
-    );
-    expect(result.sentimentScore).toBe(33);
-  });
-
-  it('returns null sentimentScore when no rows are classified', () => {
-    const result = computeOverviewMetrics([], [], [], [], []);
-    expect(result.sentimentScore).toBeNull();
   });
 });
 

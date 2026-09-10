@@ -4,12 +4,10 @@ import { FakeCandidateTopicsReader } from './fakes/fake-candidate-topics-reader'
 import { FakeArticlesReader } from './fakes/fake-articles-reader';
 import { FakeThreadsEngagementReader } from './fakes/fake-threads-engagement-reader';
 import { FakeFacebookEngagementReader } from './fakes/fake-facebook-engagement-reader';
-import { FakeThreadsSentimentReader } from './fakes/fake-threads-sentiment-reader';
-import { FakeFacebookSentimentReader } from './fakes/fake-facebook-sentiment-reader';
 import type { Article } from '../lib/types';
 
 describe('getOverviewMetrics', () => {
-  it('combines all 6 readers into metrics + donut for the given date', async () => {
+  it('combines all 4 readers into metrics + donut for the given date', async () => {
     const candidateReader = new FakeCandidateTopicsReader([
       { id: 'a', source: 'rss', keyword: 'bitcoin', date: '2026-08-24', metric_value: 1, growth_rate: 0, category_hint: ['tai_chinh'], is_shortlisted: true },
     ]);
@@ -39,40 +37,30 @@ describe('getOverviewMetrics', () => {
       },
     ]);
     const facebookEngagementReader = new FakeFacebookEngagementReader([]);
-    const threadsSentimentReader = new FakeThreadsSentimentReader([
-      { date: '2026-08-24', keyword: 'bitcoin', sentiment: 'positive' },
-    ]);
-    const facebookSentimentReader = new FakeFacebookSentimentReader([]);
 
     const result = await getOverviewMetrics(
       candidateReader,
       articlesReader,
       threadsEngagementReader,
       facebookEngagementReader,
-      threadsSentimentReader,
-      facebookSentimentReader,
       '2026-08-24'
     );
 
     expect(result.metrics.buzzVolume).toBe(2); // 1 article + 1 threads post
     expect(result.metrics.topicsTrending).toBe(1);
-    expect(result.metrics.sentimentScore).toBe(100);
     expect(result.donut.find((s) => s.category === 'tai_chinh')?.pct).toBe(100);
   });
 
-  it('returns zero/null metrics when every reader has no data for the date', async () => {
+  it('returns zero metrics when every reader has no data for the date', async () => {
     const result = await getOverviewMetrics(
       new FakeCandidateTopicsReader([]),
       new FakeArticlesReader([]),
       new FakeThreadsEngagementReader([]),
       new FakeFacebookEngagementReader([]),
-      new FakeThreadsSentimentReader([]),
-      new FakeFacebookSentimentReader([]),
       '2026-08-24'
     );
 
     expect(result.metrics.buzzVolume).toBe(0);
-    expect(result.metrics.sentimentScore).toBeNull();
   });
 
   it('computes week-over-week deltas by also fetching the date 7 days earlier', async () => {
@@ -87,8 +75,6 @@ describe('getOverviewMetrics', () => {
       articlesReader,
       new FakeThreadsEngagementReader([]),
       new FakeFacebookEngagementReader([]),
-      new FakeThreadsSentimentReader([]),
-      new FakeFacebookSentimentReader([]),
       '2026-08-24'
     );
 

@@ -2,8 +2,6 @@ import type { CandidateTopicsReader } from './candidate-topics-reader';
 import type { ArticlesReader } from './articles-reader';
 import type { ThreadsEngagementReader } from './threads-engagement-reader';
 import type { FacebookEngagementReader } from './facebook-engagement-reader';
-import type { ThreadsSentimentReader } from './threads-sentiment-reader';
-import type { FacebookSentimentReader } from './facebook-sentiment-reader';
 import {
   computeOverviewMetrics,
   computeDonutSegments,
@@ -32,20 +30,16 @@ export async function getOverviewMetrics(
   articlesReader: ArticlesReader,
   threadsEngagementReader: ThreadsEngagementReader,
   facebookEngagementReader: FacebookEngagementReader,
-  threadsSentimentReader: ThreadsSentimentReader,
-  facebookSentimentReader: FacebookSentimentReader,
   date: string
 ): Promise<OverviewMetricsResult> {
   const previousDate = addDaysUTC(date, -7);
 
-  const [candidates, articles, threadsRows, facebookRows, threadsSentimentRows, facebookSentimentRows] =
+  const [candidates, articles, threadsRows, facebookRows] =
     await Promise.all([
       candidateReader.getCandidatesForDate(date),
       articlesReader.getForDate(date),
       threadsEngagementReader.getForDate(date),
       facebookEngagementReader.getForDate(date),
-      threadsSentimentReader.getForDate(date),
-      facebookSentimentReader.getForDate(date),
     ]);
 
   const [prevArticles, prevThreadsRows, prevFacebookRows] = await Promise.all([
@@ -54,16 +48,14 @@ export async function getOverviewMetrics(
     facebookEngagementReader.getForDate(previousDate),
   ]);
 
-  const sentimentRows = [...threadsSentimentRows, ...facebookSentimentRows];
-  const metrics = computeOverviewMetrics(candidates, articles, threadsRows, facebookRows, sentimentRows);
+  const metrics = computeOverviewMetrics(candidates, articles, threadsRows, facebookRows);
   const donut = computeDonutSegments(articles, threadsRows, facebookRows);
 
   // Reuse computeOverviewMetrics for the previous-day figures too, passing
-  // empty arrays for candidates/sentimentRows since those only feed
-  // topicsTrending/sentimentScore — fields this delta computation doesn't
-  // need — rather than re-deriving the buzzVolume/audienceScale formulas
-  // inline a second time.
-  const prevMetrics = computeOverviewMetrics([], prevArticles, prevThreadsRows, prevFacebookRows, []);
+  // an empty array for candidates since that only feeds topicsTrending — a
+  // field this delta computation doesn't need — rather than re-deriving the
+  // buzzVolume/audienceScale formulas inline a second time.
+  const prevMetrics = computeOverviewMetrics([], prevArticles, prevThreadsRows, prevFacebookRows);
 
   return {
     metrics,
