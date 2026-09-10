@@ -5,6 +5,8 @@ export const SOURCE_LABELS: Record<CandidateTopic['source'], string> = {
   google_trends: 'Google Trends',
   youtube: 'YouTube',
   rss: 'RSS',
+  threads: 'Threads',
+  facebook: 'Facebook',
 };
 
 export function formatPercent(value: number | null): string {

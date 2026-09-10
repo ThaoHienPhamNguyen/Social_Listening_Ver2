@@ -130,6 +130,8 @@ describe('withoutEngagement', () => {
       google_trends: [hotTopicRow({ id: 'a' })],
       youtube: [] as HotTopicRow[],
       rss: [hotTopicRow({ id: 'b' })],
+      threads: [] as HotTopicRow[],
+      facebook: [] as HotTopicRow[],
     };
     const result = withoutEngagement(bySource);
     expect(result.google_trends[0].engagement).toBeNull();

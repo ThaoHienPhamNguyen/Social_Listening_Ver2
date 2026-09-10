@@ -23,7 +23,7 @@ describe('getHotTopics', () => {
     const reader = new FakeCandidateTopicsReader([]);
     const result = await getHotTopics(reader, 'tai_chinh');
     expect(result.date).toBeNull();
-    expect(result.bySource).toEqual({ google_trends: [], youtube: [], rss: [] });
+    expect(result.bySource).toEqual({ google_trends: [], youtube: [], rss: [], threads: [], facebook: [] });
   });
 
   it('filters to one category when a category is given', async () => {

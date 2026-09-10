@@ -55,6 +55,8 @@ export function groupBySource(rows: HotTopicRow[]): Record<CandidateTopic['sourc
     google_trends: [],
     youtube: [],
     rss: [],
+    threads: [],
+    facebook: [],
   };
   for (const row of rows) {
     grouped[row.source].push(row);

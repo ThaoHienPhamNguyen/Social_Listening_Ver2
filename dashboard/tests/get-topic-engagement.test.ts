@@ -22,6 +22,8 @@ describe('enrichHotTopicsWithThreadsData', () => {
       google_trends: [hotTopicRow({ id: 'a', source: 'google_trends', keyword: 'bitcoin' })],
       youtube: [hotTopicRow({ id: 'b', source: 'youtube', keyword: 'ethereum' })],
       rss: [] as HotTopicRow[],
+      threads: [] as HotTopicRow[],
+      facebook: [] as HotTopicRow[],
     };
     const engagementReader = new FakeThreadsEngagementReader([
       {
@@ -50,7 +52,13 @@ describe('enrichHotTopicsWithThreadsData', () => {
   });
 
   it('only pulls data for the given date', async () => {
-    const bySource = { google_trends: [hotTopicRow({ keyword: 'bitcoin' })], youtube: [], rss: [] };
+    const bySource = {
+      google_trends: [hotTopicRow({ keyword: 'bitcoin' })],
+      youtube: [],
+      rss: [],
+      threads: [],
+      facebook: [],
+    };
     const engagementReader = new FakeThreadsEngagementReader([
       {
         date: '2026-08-23',

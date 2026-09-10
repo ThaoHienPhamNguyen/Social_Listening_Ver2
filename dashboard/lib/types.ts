@@ -2,7 +2,7 @@
 // Mirrors the shapes of the root ingestion project's src/types.ts, trimmed
 // to the fields this dashboard actually reads.
 
-export type DiscoverySourceName = 'google_trends' | 'youtube' | 'rss';
+export type DiscoverySourceName = 'google_trends' | 'youtube' | 'rss' | 'threads' | 'facebook';
 
 export interface CandidateTopic {
   id: string;

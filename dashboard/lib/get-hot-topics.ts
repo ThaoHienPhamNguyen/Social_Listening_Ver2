@@ -10,7 +10,7 @@ export interface HotTopicsResult {
 }
 
 function emptyBySource(): Record<CandidateTopic['source'], HotTopicRow[]> {
-  return { google_trends: [], youtube: [], rss: [] };
+  return { google_trends: [], youtube: [], rss: [], threads: [], facebook: [] };
 }
 
 export async function getHotTopics(

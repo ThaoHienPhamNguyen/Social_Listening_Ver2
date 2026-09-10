@@ -22,6 +22,8 @@ describe('flattenAndRankHotTopics', () => {
       google_trends: [row({ id: 'a' })],
       youtube: [row({ id: 'b' })],
       rss: [row({ id: 'c' })],
+      threads: [],
+      facebook: [],
     };
     const result = flattenAndRankHotTopics(bySource);
     expect(result.map((r) => r.id).sort()).toEqual(['a', 'b', 'c']);
@@ -32,6 +34,8 @@ describe('flattenAndRankHotTopics', () => {
       google_trends: [row({ id: 'low', trendingScore: 10 })],
       youtube: [row({ id: 'high', trendingScore: 90 })],
       rss: [],
+      threads: [],
+      facebook: [],
     };
     const result = flattenAndRankHotTopics(bySource);
     expect(result.map((r) => r.id)).toEqual(['high', 'low']);
@@ -42,6 +46,8 @@ describe('flattenAndRankHotTopics', () => {
       google_trends: [row({ id: 'null-low', trendingScore: null, metricValue: 5 })],
       youtube: [row({ id: 'has-score', trendingScore: 20 })],
       rss: [row({ id: 'null-high', trendingScore: null, metricValue: 50 })],
+      threads: [],
+      facebook: [],
     };
     const result = flattenAndRankHotTopics(bySource);
     expect(result.map((r) => r.id)).toEqual(['has-score', 'null-high', 'null-low']);
@@ -52,6 +58,8 @@ describe('flattenAndRankHotTopics', () => {
       google_trends: [row({ id: 'real-score', trendingScore: 50, metricValue: 5 })],
       youtube: [row({ id: 'new-high-metric', trendingScore: NEW_KEYWORD_TRENDING_SCORE, metricValue: 999 })],
       rss: [],
+      threads: [],
+      facebook: [],
     };
     const result = flattenAndRankHotTopics(bySource);
     // 'new-high-metric' has a far larger raw trendingScore (99900 vs 50) and
@@ -67,6 +75,8 @@ describe('flattenAndRankHotTopics', () => {
         row({ id: 'new-high', trendingScore: NEW_KEYWORD_TRENDING_SCORE, metricValue: 500 }),
       ],
       rss: [],
+      threads: [],
+      facebook: [],
     };
     const result = flattenAndRankHotTopics(bySource);
     expect(result.map((r) => r.id)).toEqual(['new-high', 'new-low']);
@@ -77,6 +87,8 @@ describe('flattenAndRankHotTopics', () => {
       google_trends: [row({ id: 'real', trendingScore: 30, metricValue: 1 })],
       youtube: [row({ id: 'new', trendingScore: NEW_KEYWORD_TRENDING_SCORE, metricValue: 1 })],
       rss: [row({ id: 'none', trendingScore: null, metricValue: 1 })],
+      threads: [],
+      facebook: [],
     };
     const result = flattenAndRankHotTopics(bySource);
     expect(result.map((r) => r.id)).toEqual(['real', 'new', 'none']);
