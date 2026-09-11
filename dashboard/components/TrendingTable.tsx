@@ -42,7 +42,6 @@ export function TrendingTable({ rows }: { rows: EnrichedHotTopicRow[] }) {
               <span className="text-xs font-bold text-ink-2 whitespace-nowrap flex-shrink-0">
                 {formatTrendingScore(row.trendingScore)}
               </span>
-              <span className="text-xs text-ink-3 w-20 text-right flex-shrink-0">—</span>
             </Link>
           );
         })}

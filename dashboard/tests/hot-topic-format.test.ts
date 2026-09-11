@@ -10,6 +10,8 @@ describe('SOURCE_LABELS', () => {
     expect(SOURCE_LABELS.google_trends).toBe('Google Trends');
     expect(SOURCE_LABELS.youtube).toBe('YouTube');
     expect(SOURCE_LABELS.rss).toBe('RSS');
+    expect(SOURCE_LABELS.threads).toBe('Threads');
+    expect(SOURCE_LABELS.facebook).toBe('Facebook');
   });
 });
 
