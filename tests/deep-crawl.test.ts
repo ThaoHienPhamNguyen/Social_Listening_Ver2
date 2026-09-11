@@ -80,6 +80,65 @@ describe('runDeepCrawl', () => {
     expect(socialRow).toMatchObject({ source: 'threads', post_url: 'https://threads.net/p/1' });
   });
 
+  it('writes exactly ONE raw social row per real post, tagged with its first extracted bigram', async () => {
+    const candidateRepo = new FakeCandidateTopicRepository();
+    const socialRepo = new FakeTopicSocialDataRepository();
+    const client = new FakeThreadsSearchClient();
+    // 'giá vàng hôm nay tăng mạnh' yields 5 bigrams (giá vàng, vàng hôm, hôm
+    // nay, nay tăng, tăng mạnh) — old behavior wrote 5 duplicate rows for
+    // this single post; the fix must write exactly 1.
+    client.postsByKeyword['chứng khoán'] = [
+      post({ post_url: 'https://threads.net/p/1', text_content: 'giá vàng hôm nay tăng mạnh', like_count: 10 }),
+    ];
+
+    const result = await runDeepCrawl({ candidateRepo, socialRepo, client, now: NOW });
+
+    const rowsForPost = socialRepo.posts.filter((p) => p.post_url === 'https://threads.net/p/1');
+    expect(rowsForPost).toHaveLength(1);
+    expect(rowsForPost[0].keyword).toBe('giá vàng');
+    expect(result.postsUpserted).toBe(1);
+  });
+
+  it("sums a bigram's engagement across every query sharing a category instead of a later upsert overwriting an earlier one", async () => {
+    const candidateRepo = new FakeCandidateTopicRepository();
+    const socialRepo = new FakeTopicSocialDataRepository();
+    const client = new FakeThreadsSearchClient();
+    // Both queries belong to tai_chinh (see THREADS_DISCOVERY_QUERIES) and
+    // both posts share the bigram "giá vàng" with different engagement.
+    client.postsByKeyword['chứng khoán'] = [
+      post({
+        post_url: 'https://threads.net/p/1',
+        text_content: 'giá vàng tăng mạnh',
+        like_count: 10,
+        reply_count: 0,
+        repost_count: 0,
+        quote_count: 0,
+        share_count: 0,
+      }),
+    ];
+    client.postsByKeyword['ngân hàng'] = [
+      post({
+        post_url: 'https://threads.net/p/2',
+        text_content: 'giá vàng giảm nhẹ',
+        like_count: 20,
+        reply_count: 0,
+        repost_count: 0,
+        quote_count: 0,
+        share_count: 0,
+      }),
+    ];
+
+    const result = await runDeepCrawl({ candidateRepo, socialRepo, client, now: NOW });
+
+    const giaVang = candidateRepo.candidates.find((c) => c.keyword === 'giá vàng');
+    expect(giaVang?.metric_value).toBe(30);
+    // One candidate upsert per category (3 categories total), not per query
+    // (6 queries) — a later query's upsert must not silently overwrite an
+    // earlier one's metric_value for the same keyword.
+    expect(candidateRepo.upsertCandidatesCallSizes.length).toBe(3);
+    expect(result.errors).toEqual([]);
+  });
+
   it("isolates one query's client failure from the rest", async () => {
     const candidateRepo = new FakeCandidateTopicRepository();
     const socialRepo = new FakeTopicSocialDataRepository();

@@ -1,6 +1,6 @@
 import type { FacebookPageDataRepository } from './lib/facebook-page-data-repository';
 import type { CandidateTopicRepository } from './lib/candidate-topic-repository';
-import type { FacebookPageScrapeClient } from './lib/apify-facebook-client';
+import type { FacebookPageScrapeClient, FacebookPost } from './lib/apify-facebook-client';
 import type { FacebookPageData, CandidateTopic, Category } from './types';
 import { FACEBOOK_SEED_GROUPS, type FacebookSeedGroup } from './lib/facebook-seed-groups';
 import { FACEBOOK_SEED_PAGES, type FacebookSeedPage } from './lib/facebook-seed-pages';
@@ -57,6 +57,12 @@ export async function runDeepCrawlFacebook(deps: DeepCrawlFacebookDeps): Promise
   ];
   result.seedsAttempted = seeds.length;
 
+  // Posts accumulated per category across every seed sharing that
+  // category — same reasoning as deep-crawl.ts: a bigram appearing in
+  // more than one seed's posts gets its engagement SUMMED, not
+  // overwritten by whichever seed's upsert happens to run last.
+  const postsByCategory = new Map<Category, FacebookPost[]>();
+
   for (const seed of seeds) {
     try {
       const posts = await seed.client.scrapePage(seed.url);
@@ -72,11 +78,12 @@ export async function runDeepCrawlFacebook(deps: DeepCrawlFacebookDeps): Promise
       // Drop posts with no text — nothing to extract keywords from.
       const dedupedPosts = [...new Map(posts.map((p) => [p.post_url, p])).values()].filter((p) => p.text_content);
 
+      // One raw row per real post — see deep-crawl.ts's identical comment.
       const socialRows: Partial<FacebookPageData>[] = [];
       for (const p of dedupedPosts) {
-        for (const keyword of new Set(extractKeywords(p.text_content))) {
-          socialRows.push({ ...p, keyword, page_url: seed.url, category: seed.category, date });
-        }
+        const keywords = extractKeywords(p.text_content);
+        if (keywords.length === 0) continue;
+        socialRows.push({ ...p, keyword: keywords[0], page_url: seed.url, category: seed.category, date });
       }
       const { error: socialError, count: socialCount } = await deps.socialRepo.upsertPosts(socialRows);
       if (socialError) {
@@ -85,27 +92,33 @@ export async function runDeepCrawlFacebook(deps: DeepCrawlFacebookDeps): Promise
         result.postsUpserted += socialCount;
       }
 
-      const candidates = aggregateFacebookKeywords(dedupedPosts, seed.category);
-      const candidateRows: Partial<CandidateTopic>[] = candidates.map((c) => ({
-        source: 'facebook',
-        keyword: c.keyword,
-        date,
-        metric_value: c.metric_value,
-        growth_rate: null,
-        category_hint: c.knownCategories ?? [seed.category],
-      }));
-      const { error: candidateError, count: candidateCount } = await deps.candidateRepo.upsertCandidates(
-        candidateRows
-      );
-      if (candidateError) {
-        result.errors.push(`candidate upsert failed for "${seed.url}": ${candidateError}`);
-      } else {
-        result.candidatesUpserted += candidateCount;
-      }
+      const existing = postsByCategory.get(seed.category) ?? [];
+      existing.push(...dedupedPosts);
+      postsByCategory.set(seed.category, existing);
     } catch (err) {
       // One seed's failure must not abort the rest — same isolation
       // principle used throughout this codebase.
       result.errors.push(`crawl failed for "${seed.url}": ${(err as Error).message}`);
+    }
+  }
+
+  for (const [category, posts] of postsByCategory) {
+    const candidates = aggregateFacebookKeywords(posts, category);
+    const candidateRows: Partial<CandidateTopic>[] = candidates.map((c) => ({
+      source: 'facebook',
+      keyword: c.keyword,
+      date,
+      metric_value: c.metric_value,
+      growth_rate: null,
+      category_hint: c.knownCategories ?? [category],
+    }));
+    const { error: candidateError, count: candidateCount } = await deps.candidateRepo.upsertCandidates(
+      candidateRows
+    );
+    if (candidateError) {
+      result.errors.push(`candidate upsert failed for "${category}": ${candidateError}`);
+    } else {
+      result.candidatesUpserted += candidateCount;
     }
   }
 
