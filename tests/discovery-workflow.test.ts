@@ -5,22 +5,12 @@ import { load } from 'js-yaml';
 describe('.github/workflows/discovery-ingestion.yml', () => {
   const doc = load(readFileSync('.github/workflows/discovery-ingestion.yml', 'utf8')) as any;
 
-  it('defines all five jobs', () => {
-    expect(Object.keys(doc.jobs)).toEqual([
-      'discovery-ingest',
-      'deep-crawl',
-      'deep-crawl-facebook',
-      'rank-and-select',
-      'aggregate-engagement',
-    ]);
+  it('defines all four jobs', () => {
+    expect(Object.keys(doc.jobs)).toEqual(['discovery-ingest', 'deep-crawl', 'rank-and-select', 'aggregate-engagement']);
   });
 
-  it('gates rank-and-select on all three writer jobs via needs', () => {
-    expect(doc['jobs']['rank-and-select']['needs']).toEqual([
-      'discovery-ingest',
-      'deep-crawl',
-      'deep-crawl-facebook',
-    ]);
+  it('gates rank-and-select on both writer jobs via needs', () => {
+    expect(doc['jobs']['rank-and-select']['needs']).toEqual(['discovery-ingest', 'deep-crawl']);
   });
 
   it('schedules 3 runs per day via cron, same cadence as RSS ingestion', () => {
@@ -47,23 +37,8 @@ describe('.github/workflows/discovery-ingestion.yml', () => {
     expect(step?.env?.APIFY_TOKEN).toBe('${{ secrets.APIFY_TOKEN }}');
   });
 
-  it('runs deep-crawl-facebook independently of the discovery layer (no needs)', () => {
-    expect(doc['jobs']['deep-crawl-facebook']['needs']).toBeUndefined();
-  });
-
-  it('deep-crawl-facebook has no conditional guard since it has no dependencies', () => {
-    expect(doc['jobs']['deep-crawl-facebook']['if']).toBeUndefined();
-  });
-
-  it('passes APIFY_TOKEN through to the deep-crawl-facebook job', () => {
-    const step = doc['jobs']['deep-crawl-facebook']['steps'].find(
-      (s: any) => s.run === 'npm run deep-crawl-facebook'
-    );
-    expect(step?.env?.APIFY_TOKEN).toBe('${{ secrets.APIFY_TOKEN }}');
-  });
-
-  it('gates aggregate-engagement on both deep-crawl jobs via needs', () => {
-    expect(doc['jobs']['aggregate-engagement']['needs']).toEqual(['deep-crawl', 'deep-crawl-facebook']);
+  it('gates aggregate-engagement on deep-crawl via needs', () => {
+    expect(doc['jobs']['aggregate-engagement']['needs']).toEqual(['deep-crawl']);
   });
 
   it('runs aggregate-engagement even if an earlier job failed, as long as it was not cancelled', () => {
