@@ -13,6 +13,7 @@ export const METRIC_TOOLTIPS = {
   trendingScore:
     'So sánh mức độ quan tâm hiện tại với baseline gần đây, nhân 100. Từ khóa mới chưa có baseline sẽ hiện "Mới".',
   buzzTrend: 'Buzz mỗi ngày theo từng lĩnh vực trong 7 ngày qua, cùng công thức trọng số với biểu đồ Phân bổ lĩnh vực.',
+  sectorBuzzTrend: 'Buzz mỗi ngày của lĩnh vực này trong 7 ngày qua, cùng công thức trọng số với Buzz Volume.',
   gainersLosers: 'So sánh engagement Threads theo từ khóa giữa 7 ngày gần nhất và 7 ngày trước đó, xếp theo % thay đổi.',
   topicDetailTrendingScore: 'Trending Score của từ khóa này theo từng ngày trong 7 ngày qua.',
   topicDetailEngagement: 'Tổng lượt tương tác Threads của từ khóa này theo từng ngày.',

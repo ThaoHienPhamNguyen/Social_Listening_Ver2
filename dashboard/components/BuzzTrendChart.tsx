@@ -5,7 +5,11 @@ const H = 140;
 const W = 500;
 const PAD = { top: 8, bottom: 24, left: 4, right: 4 };
 
-export function BuzzTrendChart({ data }: { data: BuzzTrendPoint[] }) {
+// `category` scopes the chart to one line (used on sector pages — the page
+// is already filtered to one category, so comparing against the other two
+// is noise and the legend is redundant with the page title). Omitted (or on
+// Overview), every category renders as its own line with a legend.
+export function BuzzTrendChart({ data, category }: { data: BuzzTrendPoint[]; category?: string }) {
   if (data.length <= 1) {
     return (
       <div className="flex items-center justify-center text-sm text-ink-3" style={{ height: H + 32 }}>
@@ -14,7 +18,9 @@ export function BuzzTrendChart({ data }: { data: BuzzTrendPoint[] }) {
     );
   }
 
-  const allVals = data.flatMap((p) => CATEGORIES.map((c) => Number(p[c.value])));
+  const categoriesToRender = category ? CATEGORIES.filter((c) => c.value === category) : CATEGORIES;
+
+  const allVals = data.flatMap((p) => categoriesToRender.map((c) => Number(p[c.value])));
   const max = Math.max(...allVals, 1);
 
   const chartH = H - PAD.top - PAD.bottom;
@@ -28,7 +34,7 @@ export function BuzzTrendChart({ data }: { data: BuzzTrendPoint[] }) {
   ];
 
   // Compute category paths once to avoid duplication
-  const categoryPaths = CATEGORIES.map((c) => {
+  const categoryPaths = categoriesToRender.map((c) => {
     const coords = data.map((p, i) => ({ x: toX(i), y: toY(Number(p[c.value])) }));
     const linePath = coords.map((pt, i) => `${i === 0 ? 'M' : 'L'} ${pt.x} ${pt.y}`).join(' ');
     const areaPath = `${linePath} L ${coords[coords.length - 1].x} ${PAD.top + chartH} L ${coords[0].x} ${PAD.top + chartH} Z`;
@@ -73,14 +79,16 @@ export function BuzzTrendChart({ data }: { data: BuzzTrendPoint[] }) {
           </text>
         ))}
       </svg>
-      <div className="flex items-center gap-5 mt-1">
-        {CATEGORIES.map((c) => (
-          <span key={c.value} className="flex items-center gap-1.5 text-[11px] text-ink-3">
-            <span className="w-6 h-0.5 inline-block rounded-full" style={{ background: c.color }} />
-            {c.label}
-          </span>
-        ))}
-      </div>
+      {!category && (
+        <div className="flex items-center gap-5 mt-1">
+          {categoriesToRender.map((c) => (
+            <span key={c.value} className="flex items-center gap-1.5 text-[11px] text-ink-3">
+              <span className="w-6 h-0.5 inline-block rounded-full" style={{ background: c.color }} />
+              {c.label}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

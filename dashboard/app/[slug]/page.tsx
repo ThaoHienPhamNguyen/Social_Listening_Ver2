@@ -11,14 +11,17 @@ import { getFacebookSummary } from '../../lib/get-facebook-summary';
 import type { FacebookSummary } from '../../lib/facebook-summary';
 import { getCategoryBySlug } from '../../lib/categories';
 import { getSectorMetrics } from '../../lib/get-sector-metrics';
+import { getBuzzTrend } from '../../lib/get-buzz-trend';
 import { flattenAndRankHotTopics } from '../../lib/trending';
 import { sortByRecency } from '../../lib/hot-topics';
 import { extractTopKeywords } from '../../lib/top-keywords';
 import { computeBuzzByPlatform, type PlatformBuzz } from '../../lib/buzz-by-platform';
+import type { BuzzTrendPoint } from '../../lib/buzz-trend';
 import { ArticlesSection } from '../../components/ArticlesSection';
 import { FacebookSummarySection } from '../../components/FacebookSummarySection';
 import { TrendingTabs } from '../../components/TrendingTabs';
 import { BuzzByPlatformSection } from '../../components/BuzzByPlatformSection';
+import { BuzzTrendChart } from '../../components/BuzzTrendChart';
 import { KpiCard } from '../../components/KpiCard';
 import { Topbar } from '../../components/layout/Topbar';
 import { MetricTooltip } from '../../components/MetricTooltip';
@@ -113,6 +116,22 @@ async function loadTopKeywords(category: string, date: string | null): Promise<s
   }
 }
 
+async function loadBuzzTrend(date: string | null): Promise<BuzzTrendPoint[] | null> {
+  if (date === null) return null;
+  try {
+    const client = createServerSupabaseClient();
+    return await getBuzzTrend(
+      new SupabaseArticlesReader(client),
+      new SupabaseThreadsEngagementReader(client),
+      new SupabaseFacebookEngagementReader(client),
+      date
+    );
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
+}
+
 async function loadBuzzByPlatform(category: string, date: string | null): Promise<PlatformBuzz[] | null> {
   if (date === null) return null;
   try {
@@ -144,13 +163,15 @@ export default async function SectorPage({ params }: { params: Promise<{ slug: s
   ]);
   const date = 'error' in hotTopics ? null : hotTopics.date;
 
-  const [threadsEnrichedBySource, facebookSummary, sectorMetrics, topKeywords, buzzByPlatform] = await Promise.all([
-    'error' in hotTopics ? Promise.resolve(null) : loadThreadsEngagement(hotTopics.bySource, hotTopics.date),
-    loadFacebookSummary(categoryDef.value, date),
-    loadSectorMetrics(categoryDef.value, date),
-    loadTopKeywords(categoryDef.value, date),
-    loadBuzzByPlatform(categoryDef.value, date),
-  ]);
+  const [threadsEnrichedBySource, facebookSummary, sectorMetrics, topKeywords, buzzByPlatform, buzzTrend] =
+    await Promise.all([
+      'error' in hotTopics ? Promise.resolve(null) : loadThreadsEngagement(hotTopics.bySource, hotTopics.date),
+      loadFacebookSummary(categoryDef.value, date),
+      loadSectorMetrics(categoryDef.value, date),
+      loadTopKeywords(categoryDef.value, date),
+      loadBuzzByPlatform(categoryDef.value, date),
+      loadBuzzTrend(date),
+    ]);
 
   const hotTopicsWithEngagement =
     'error' in hotTopics
@@ -193,6 +214,17 @@ export default async function SectorPage({ params }: { params: Promise<{ slug: s
             <p className="text-sm text-ink-3">Chưa có dữ liệu.</p>
           </div>
         )}
+        <section className="bg-surface border border-line rounded-card shadow-card p-6 mb-8">
+          <h2 className="text-base font-bold text-ink mb-4">
+            Buzz Trend (7 ngày)
+            <MetricTooltip text={METRIC_TOOLTIPS.sectorBuzzTrend} />
+          </h2>
+          {buzzTrend ? (
+            <BuzzTrendChart data={buzzTrend} category={categoryDef.value} />
+          ) : (
+            <p className="text-sm text-ink-3">Chưa có dữ liệu.</p>
+          )}
+        </section>
         <section className="mb-8">
           <h2 className="text-base font-bold text-ink mb-4">
             Chủ đề đang trending
