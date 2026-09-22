@@ -133,12 +133,11 @@ async function loadBuzzByPlatform(date: string | null): Promise<PlatformBuzz[] |
   if (date === null) return null;
   try {
     const client = createServerSupabaseClient();
-    const [articles, threadsRows, facebookRows] = await Promise.all([
+    const [articles, threadsRows] = await Promise.all([
       new SupabaseArticlesReader(client).getForDate(date),
       new SupabaseThreadsEngagementReader(client).getForDate(date),
-      new SupabaseFacebookEngagementReader(client).getForDate(date),
     ]);
-    return computeBuzzByPlatform(articles, threadsRows, facebookRows);
+    return computeBuzzByPlatform(articles, threadsRows);
   } catch (err) {
     console.error(err);
     return null;

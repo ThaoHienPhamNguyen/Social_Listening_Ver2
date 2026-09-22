@@ -119,15 +119,13 @@ async function loadBuzzByPlatform(category: string, date: string | null): Promis
     const client = createServerSupabaseClient();
     const rangeStart = addDaysUTC(date, -6);
     const rangeEndExclusive = addDaysUTC(date, 1);
-    const [articles, threadsRows, facebookRows] = await Promise.all([
+    const [articles, threadsRows] = await Promise.all([
       new SupabaseArticlesReader(client).getForDateRange(rangeStart, rangeEndExclusive),
       new SupabaseThreadsEngagementReader(client).getForDateRange(rangeStart, rangeEndExclusive),
-      new SupabaseFacebookEngagementReader(client).getForDateRange(rangeStart, rangeEndExclusive),
     ]);
     return computeBuzzByPlatform(
       articles.filter((a) => a.categories.includes(category)),
-      threadsRows.filter((r) => r.category === category),
-      facebookRows.filter((r) => r.category === category)
+      threadsRows.filter((r) => r.category === category)
     );
   } catch (err) {
     console.error(err);

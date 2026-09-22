@@ -1,4 +1,4 @@
-import type { ThreadsEngagementDaily, FacebookEngagementDaily } from './types';
+import type { ThreadsEngagementDaily } from './types';
 
 export interface PlatformBuzz {
   label: string;
@@ -8,15 +8,15 @@ export interface PlatformBuzz {
 // Caller pre-scopes the input window (Overview: 1 day; sector page: 7-day
 // window filtered to 1 category) — this function is agnostic to that,
 // mirroring computeOverviewMetrics/computeSectorMetrics's own convention.
+// Facebook dropped 2026-09-22 along with its crawl job — see
+// .github/workflows/discovery-ingestion.yml.
 export function computeBuzzByPlatform(
   articles: { categories: string[] }[],
-  threadsRows: ThreadsEngagementDaily[],
-  facebookRows: FacebookEngagementDaily[]
+  threadsRows: ThreadsEngagementDaily[]
 ): PlatformBuzz[] {
   const counts = [
     { label: 'Báo điện tử', count: articles.length },
     { label: 'Threads', count: threadsRows.reduce((sum, r) => sum + r.post_count, 0) },
-    { label: 'Facebook', count: facebookRows.reduce((sum, r) => sum + r.post_count, 0) },
   ];
   const total = counts.reduce((sum, p) => sum + p.count, 0);
 
