@@ -15,9 +15,10 @@ function emptyBySource(): Record<CandidateTopic['source'], HotTopicRow[]> {
 
 export async function getHotTopics(
   reader: CandidateTopicsReader,
-  category: string | null
+  category: string | null,
+  explicitDate?: string
 ): Promise<HotTopicsResult> {
-  const date = await reader.getLatestDate();
+  const date = explicitDate ?? (await reader.getLatestDate());
   if (date === null) {
     return { date: null, bySource: emptyBySource() };
   }
