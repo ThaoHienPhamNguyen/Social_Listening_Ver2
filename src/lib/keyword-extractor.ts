@@ -59,6 +59,10 @@ function extractEntityPhrases(text: string): string[] {
   return phrases.map((p) => p.toLowerCase());
 }
 
+function isDroppable(word: string): boolean {
+  return word.length <= 2 || STOP_WORDS.has(word);
+}
+
 export function extractKeywords(text: string): string[] {
   const entityPhrases = extractEntityPhrases(text);
 
@@ -66,7 +70,7 @@ export function extractKeywords(text: string): string[] {
     .toLowerCase()
     .replace(/[^\p{L}\p{N}\s]/gu, ' ')
     .split(/\s+/)
-    .filter((w) => w.length > 2 && !STOP_WORDS.has(w));
+    .filter((w) => w.length > 0);
 
   // Only 2-word phrases are kept — standalone single words are almost always
   // too generic (pronouns, filler, foreign-language slang not covered by
@@ -74,8 +78,16 @@ export function extractKeywords(text: string): string[] {
   // multi-word candidates by raw frequency in production. Entity phrases
   // above are exempt from this: a single proper noun ("Apple", "Jack") is
   // specific, not generic, so it's kept even at 1 word.
+  //
+  // The droppable check runs on each PAIR, not on `words` up front: dropping
+  // a short/stop word from the array before pairing makes its two neighbors
+  // adjacent in the array even though they never were in the actual text —
+  // "lợi nhuận gấp 3 lần" was producing "gấp lần" this way, once "3" (length
+  // 1) got removed. Checking per-pair instead means a dropped word simply
+  // blocks the pair(s) that would have to skip over it.
   const bigrams: string[] = [];
   for (let i = 0; i < words.length - 1; i++) {
+    if (isDroppable(words[i]) || isDroppable(words[i + 1])) continue;
     bigrams.push(`${words[i]} ${words[i + 1]}`);
   }
   return [...entityPhrases, ...bigrams];

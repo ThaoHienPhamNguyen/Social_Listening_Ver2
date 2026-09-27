@@ -10,7 +10,11 @@ export const categoryKeywords: Record<Category, string[]> = {
     'hoa hậu', 'concert', 'mv', 'chương trình truyền hình',
   ],
   du_lich: [
-    'du lịch', 'tour', 'khách sạn', 'resort', 'điểm đến', 'vé máy bay',
+    // 'tour' alone (not 'tour du lịch') was matching entertainment content —
+    // "world tour", "studio tour", promo tours for a movie/concert — as
+    // false-positive travel, and as a YouTube seed keyword below it was
+    // actively fetching that content into the pool to begin with.
+    'du lịch', 'tour du lịch', 'khách sạn', 'resort', 'điểm đến', 'vé máy bay',
     'homestay', 'phượt', 'check in', 'lữ hành',
   ],
 };
@@ -26,5 +30,5 @@ export const categoryKeywords: Record<Category, string[]> = {
 export const youtubeSeedKeywords: Record<Category, string[]> = {
   tai_chinh: ['chứng khoán', 'tài chính'],
   giai_tri: ['showbiz', 'âm nhạc'],
-  du_lich: ['du lịch', 'tour'],
+  du_lich: ['du lịch', 'tour du lịch'],
 };

@@ -64,4 +64,9 @@ describe('extractKeywords', () => {
     const result = extractKeywords('Novaland chào bán cổ phiếu tỉ lệ 3:1');
     expect(result).toContain('novaland chào');
   });
+
+  it('never pairs two words that were not actually adjacent because a short word between them got dropped', () => {
+    const result = extractKeywords('Lợi nhuận gấp 3 lần so với cùng kỳ');
+    expect(result).not.toContain('gấp lần');
+  });
 });

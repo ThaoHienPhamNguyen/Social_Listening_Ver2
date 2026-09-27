@@ -14,4 +14,9 @@ describe('matchCategories', () => {
     const result = matchCategories('ngân hàng tài trợ tour du lịch');
     expect(result.sort()).toEqual(['du_lich', 'tai_chinh'].sort());
   });
+
+  it('does not tag entertainment content as du_lich just because it says "tour"', () => {
+    // "tour" alone (concert/promo tour) is not "tour du lịch" (travel tour).
+    expect(matchCategories('siddhu hiphop tamizha studio tour')).toEqual([]);
+  });
 });
