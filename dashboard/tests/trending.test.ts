@@ -31,6 +31,25 @@ describe('flattenAndRankHotTopics', () => {
     expect(result.map((r) => r.id).sort()).toEqual(['a', 'b', 'c']);
   });
 
+  it('breaks a tie in real trendingScore by metricValue descending, instead of leaving it to arrival order', () => {
+    // Google Trends reports growth in coarse buckets (100%, 500%, 1000%...)
+    // rather than an exact figure, so many keywords legitimately tie at the
+    // same real trendingScore on a given day — metricValue (actual search
+    // volume) is the tiebreak, same principle as the "Mới" tier already uses.
+    const bySource = {
+      google_trends: [
+        row({ id: 'tied-low-volume', trendingScore: 1000, metricValue: 5 }),
+        row({ id: 'tied-high-volume', trendingScore: 1000, metricValue: 50 }),
+      ],
+      youtube: [],
+      rss: [],
+      threads: [],
+      facebook: [],
+    };
+    const result = flattenAndRankHotTopics(bySource);
+    expect(result.map((r) => r.id)).toEqual(['tied-high-volume', 'tied-low-volume']);
+  });
+
   it('sorts by trendingScore descending', () => {
     const bySource = {
       google_trends: [row({ id: 'low', trendingScore: 10 })],

@@ -3,7 +3,11 @@ import type { CandidateTopic } from './types';
 import { NEW_KEYWORD_TRENDING_SCORE } from './hot-topics';
 
 // 3 tầng xếp hạng, cao xuống thấp:
-//   0. trendingScore thật (% tăng trưởng thật, so được với nhau) — sort desc
+//   0. trendingScore thật (% tăng trưởng thật, so được với nhau) — sort desc,
+//      rồi phụ theo metricValue desc khi trùng % (Google Trends báo tăng
+//      trưởng theo bậc thang tròn — 100%, 500%, 1000%... — không phải số
+//      chính xác, nên nhiều từ khóa hợp lệ trùng % nhau cùng lúc; volume tìm
+//      kiếm thật là cách duy nhất phân biệt độ hot thật giữa chúng)
 //   1. "Mới" (NEW_KEYWORD_TRENDING_SCORE — chưa có baseline 7 ngày, không
 //      phải % tăng trưởng thật) — sort theo metricValue, không dùng điểm ảo
 //      99900 để so vì nó luôn thắng mọi % thật, dồn hết từ khóa "mới" (đa
@@ -20,7 +24,10 @@ function tierOf(row: HotTopicRow): 0 | 1 | 2 {
 function compareByRank(a: HotTopicRow, b: HotTopicRow): number {
   const tierDiff = tierOf(a) - tierOf(b);
   if (tierDiff !== 0) return tierDiff;
-  if (tierOf(a) === 0) return b.trendingScore! - a.trendingScore!;
+  if (tierOf(a) === 0) {
+    const scoreDiff = b.trendingScore! - a.trendingScore!;
+    if (scoreDiff !== 0) return scoreDiff;
+  }
   return b.metricValue - a.metricValue;
 }
 
