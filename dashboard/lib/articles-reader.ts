@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Article } from './types';
+import { fetchAllPages } from './paginated-fetch';
 
 export interface ArticlesReader {
   getRecentArticles(limit: number, category: string | null): Promise<Article[]>;
@@ -33,17 +34,15 @@ export class SupabaseArticlesReader implements ArticlesReader {
     nextDate.setUTCDate(nextDate.getUTCDate() + 1);
     const nextDateStr = nextDate.toISOString().slice(0, 10);
 
-    const { data, error } = await this.client
-      .from('articles')
-      .select('id, categories')
-      .gte('published_at', `${date}T00:00:00Z`)
-      .lt('published_at', `${nextDateStr}T00:00:00Z`)
-      .limit(5000);
-    if (error) throw new Error(error.message);
-    if (data && data.length === 5000) {
-      console.warn(`articles-reader: hit the 5000-row limit for date ${date} — Buzz Volume/donut counts may be truncated.`);
-    }
-    return (data ?? []) as { id: string; categories: string[] }[];
+    return fetchAllPages<{ id: string; categories: string[] }>((from, to) =>
+      this.client
+        .from('articles')
+        .select('id, categories')
+        .gte('published_at', `${date}T00:00:00Z`)
+        .lt('published_at', `${nextDateStr}T00:00:00Z`)
+        .order('id', { ascending: true })
+        .range(from, to)
+    );
   }
 
   // Same [date, date+1) UTC boundary logic as getForDate, generalized to an
@@ -54,19 +53,16 @@ export class SupabaseArticlesReader implements ArticlesReader {
     startDate: string,
     endDateExclusive: string
   ): Promise<{ id: string; categories: string[]; date: string }[]> {
-    const { data, error } = await this.client
-      .from('articles')
-      .select('id, categories, published_at')
-      .gte('published_at', `${startDate}T00:00:00Z`)
-      .lt('published_at', `${endDateExclusive}T00:00:00Z`)
-      .limit(5000);
-    if (error) throw new Error(error.message);
-    if (data && data.length === 5000) {
-      console.warn(
-        `articles-reader: hit the 5000-row limit for range [${startDate}, ${endDateExclusive}) — Buzz Trend counts may be truncated.`
-      );
-    }
-    return ((data ?? []) as { id: string; categories: string[]; published_at: string }[]).map((row) => ({
+    const data = await fetchAllPages<{ id: string; categories: string[]; published_at: string }>((from, to) =>
+      this.client
+        .from('articles')
+        .select('id, categories, published_at')
+        .gte('published_at', `${startDate}T00:00:00Z`)
+        .lt('published_at', `${endDateExclusive}T00:00:00Z`)
+        .order('id', { ascending: true })
+        .range(from, to)
+    );
+    return data.map((row) => ({
       id: row.id,
       categories: row.categories,
       date: row.published_at.slice(0, 10),
