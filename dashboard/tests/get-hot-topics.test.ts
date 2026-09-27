@@ -42,4 +42,13 @@ describe('getHotTopics', () => {
     const result = await getHotTopics(reader, null);
     expect(result.bySource.rss.map((r) => r.id).sort()).toEqual(['a', 'b']);
   });
+
+  it('falls back to the last date with a shortlisted candidate, skipping a newer date whose raw candidates have not been shortlisted yet', async () => {
+    const yesterday = candidate({ id: 'y', date: '2026-09-26', is_shortlisted: true });
+    const todayRawOnly = candidate({ id: 't', date: '2026-09-27', is_shortlisted: false });
+    const reader = new FakeCandidateTopicsReader([yesterday, todayRawOnly]);
+    const result = await getHotTopics(reader, 'tai_chinh');
+    expect(result.date).toBe('2026-09-26');
+    expect(result.bySource.rss.map((r) => r.id)).toEqual(['y']);
+  });
 });

@@ -5,8 +5,9 @@ export class FakeCandidateTopicsReader implements CandidateTopicsReader {
   constructor(private candidates: CandidateTopic[] = []) {}
 
   async getLatestDate(): Promise<string | null> {
-    if (this.candidates.length === 0) return null;
-    return [...this.candidates.map((c) => c.date)].sort().at(-1)!;
+    const shortlisted = this.candidates.filter((c) => c.is_shortlisted);
+    if (shortlisted.length === 0) return null;
+    return [...shortlisted.map((c) => c.date)].sort().at(-1)!;
   }
 
   async getCandidatesForDate(date: string): Promise<CandidateTopic[]> {

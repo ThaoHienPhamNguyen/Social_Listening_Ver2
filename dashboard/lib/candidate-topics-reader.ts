@@ -2,8 +2,16 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { CandidateTopic } from './types';
 
 export interface CandidateTopicsReader {
-  // Most recent date (YYYY-MM-DD) with any candidate_topics rows, or null if
-  // the table is empty (e.g. before the discovery layer's first run).
+  // Most recent date (YYYY-MM-DD) that has at least one shortlisted
+  // candidate, or null if none exists yet. Deliberately NOT "latest date
+  // with any row at all": discovery-ingest can write today's first raw
+  // candidate hours before rank-and-select gets a chance to run today, and
+  // during that gap a "latest = today" definition would make every reader
+  // that keys off this date (Overview, sector pages, Analytics, Topic
+  // Detail, the public /api/topics endpoint) flip to a today that has
+  // nothing shortlisted yet — hiding yesterday's fully-populated results
+  // behind a false "no data" state every single day until today's first
+  // run completes.
   getLatestDate(): Promise<string | null>;
   // Every candidate_topics row for the given date — NOT filtered by category
   // or is_shortlisted. Callers need the full set to compute correct
@@ -28,6 +36,7 @@ export class SupabaseCandidateTopicsReader implements CandidateTopicsReader {
     const { data, error } = await this.client
       .from('candidate_topics')
       .select('date')
+      .eq('is_shortlisted', true)
       .order('date', { ascending: false })
       .limit(1);
     if (error) throw new Error(error.message);
