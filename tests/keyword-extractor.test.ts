@@ -69,4 +69,24 @@ describe('extractKeywords', () => {
     const result = extractKeywords('Lợi nhuận gấp 3 lần so với cùng kỳ');
     expect(result).not.toContain('gấp lần');
   });
+
+  describe('generic phrases stretched for context instead of kept bare', () => {
+    it('extends a known-generic phrase backward with a real neighboring word instead of keeping it bare', () => {
+      const result = extractKeywords('Novaland kinh doanh ra sao sau tái cấu trúc');
+      expect(result).not.toContain('kinh doanh');
+      expect(result).toContain('novaland kinh doanh');
+    });
+
+    it('extends a known-generic phrase forward when there is no usable word before it', () => {
+      const result = extractKeywords('Tài sản chung của công ty tăng mạnh');
+      expect(result).not.toContain('tài sản');
+      expect(result).toContain('tài sản chung');
+    });
+
+    it('drops a generic phrase entirely when neither neighbor is usable', () => {
+      const result = extractKeywords('Và kinh doanh và');
+      expect(result).not.toContain('kinh doanh');
+      expect(result.some((k) => k.includes('kinh doanh'))).toBe(false);
+    });
+  });
 });

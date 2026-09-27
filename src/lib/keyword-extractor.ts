@@ -63,6 +63,15 @@ function isDroppable(word: string): boolean {
   return word.length <= 2 || STOP_WORDS.has(word);
 }
 
+// These are real, correctly-adjacent Vietnamese words — not the fabricated-
+// adjacency bug above — just too broad to stand for a topic on their own:
+// "kinh doanh" (business) turns up in dozens of unrelated finance headlines
+// a day. Kept separate from categories.config.ts's classification keywords,
+// which serve a different purpose (tagging category, not judging
+// specificity). Hand-curated; add more here as they show up in production,
+// same maintenance model as categories.config.ts.
+const GENERIC_PHRASES = new Set(['kinh doanh', 'tài sản']);
+
 export function extractKeywords(text: string): string[] {
   const entityPhrases = extractEntityPhrases(text);
 
@@ -88,7 +97,19 @@ export function extractKeywords(text: string): string[] {
   const bigrams: string[] = [];
   for (let i = 0; i < words.length - 1; i++) {
     if (isDroppable(words[i]) || isDroppable(words[i + 1])) continue;
-    bigrams.push(`${words[i]} ${words[i + 1]}`);
+    const phrase = `${words[i]} ${words[i + 1]}`;
+    if (!GENERIC_PHRASES.has(phrase)) {
+      bigrams.push(phrase);
+      continue;
+    }
+    // Too generic alone — only worth keeping stretched out with a real
+    // neighboring word for context ("novaland kinh doanh", "tài sản
+    // chung"). Drop it entirely rather than let the bare, context-free form
+    // back in when neither neighbor is usable.
+    const before = words[i - 1];
+    const after = words[i + 2];
+    if (before !== undefined && !isDroppable(before)) bigrams.push(`${before} ${phrase}`);
+    if (after !== undefined && !isDroppable(after)) bigrams.push(`${phrase} ${after}`);
   }
   return [...entityPhrases, ...bigrams];
 }
