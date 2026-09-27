@@ -85,18 +85,29 @@ describe('getTopicsForDate', () => {
     expect(result.topics.map((t) => t.keyword)).toEqual(['high-topic', 'low-topic']);
   });
 
-  it('shapes each topic with keyword/source/category/metricValue/trendingScore/shareOfVoice', async () => {
+  it('shapes each topic with keyword/source/sources/category/metricValue/trendingScore/shareOfVoice', async () => {
     const reader = new FakeCandidateTopicsReader([candidate()]);
     const result = await getTopicsForDate(reader, 'tai_chinh');
     expect(result.topics).toEqual([
       {
         keyword: 'bitcoin',
         source: 'rss',
+        sources: ['rss'],
         category: ['tai_chinh'],
         metricValue: 10,
         trendingScore: 50,
         shareOfVoice: 100,
       },
     ]);
+  });
+
+  it('lists every source on `sources` when the same keyword was found by more than one', async () => {
+    const fromYoutube = candidate({ id: 'yt', source: 'youtube', keyword: 'việt nam', metric_value: 30 });
+    const fromThreads = candidate({ id: 'th', source: 'threads', keyword: 'việt nam', metric_value: 70 });
+    const reader = new FakeCandidateTopicsReader([fromYoutube, fromThreads]);
+    const result = await getTopicsForDate(reader, 'tai_chinh');
+    expect(result.topics).toHaveLength(1);
+    expect(result.topics[0].sources.slice().sort()).toEqual(['threads', 'youtube']);
+    expect(result.topics[0].metricValue).toBe(100);
   });
 });

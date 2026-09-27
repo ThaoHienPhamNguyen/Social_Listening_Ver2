@@ -15,6 +15,11 @@ export interface HotTopicRow {
   // buildHotTopicsForCategory/buildHotTopicsOverview, consumed by
   // sortByRecency for the "Mới nhất" tab. Optional for the same reason
   // categoryHint is: existing HotTopicRow literals in tests don't supply it.
+  sources?: CandidateTopic['source'][]; // set only by
+  // flattenAndRankHotTopics's same-keyword merge, when more than one source
+  // discovered this keyword independently — `source` above stays the
+  // highest-metricValue one for any code that only reads a single source,
+  // this lists all of them for display.
 }
 
 export function filterByCategory(candidates: CandidateTopic[], category: string): CandidateTopic[] {

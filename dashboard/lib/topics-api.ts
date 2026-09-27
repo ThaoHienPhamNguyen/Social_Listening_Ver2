@@ -6,6 +6,9 @@ import type { CandidateTopic } from './types';
 export interface TopicApiItem {
   keyword: string;
   source: CandidateTopic['source'];
+  sources: CandidateTopic['source'][]; // every source that discovered this
+  // keyword that day — usually just [source], longer when flattenAndRankHotTopics
+  // merged same-keyword rows from more than one source.
   category: string[];
   metricValue: number;
   trendingScore: number | null;
@@ -33,6 +36,7 @@ export async function getTopicsForDate(
   const topics: TopicApiItem[] = ranked.map((row) => ({
     keyword: row.keyword,
     source: row.source,
+    sources: row.sources ?? [row.source],
     category: row.categoryHint ?? [],
     metricValue: row.metricValue,
     trendingScore: row.trendingScore,

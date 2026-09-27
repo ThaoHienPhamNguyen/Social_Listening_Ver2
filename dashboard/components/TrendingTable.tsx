@@ -36,7 +36,11 @@ export function TrendingTable({ rows }: { rows: EnrichedHotTopicRow[] }) {
                       {meta.label}
                     </span>
                   )}
-                  <span className="text-[11px] text-ink-3">{SOURCE_LABELS[row.source]}</span>
+                  <span className="text-[11px] text-ink-3">
+                    {row.sources && row.sources.length > 1
+                      ? row.sources.map((s) => SOURCE_LABELS[s]).join(', ')
+                      : SOURCE_LABELS[row.source]}
+                  </span>
                 </div>
               </div>
               <span className="text-xs font-bold text-ink-2 whitespace-nowrap flex-shrink-0">

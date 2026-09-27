@@ -17,6 +17,57 @@ function tierOf(row: HotTopicRow): 0 | 1 | 2 {
   return 0;
 }
 
+function compareByRank(a: HotTopicRow, b: HotTopicRow): number {
+  const tierDiff = tierOf(a) - tierOf(b);
+  if (tierDiff !== 0) return tierDiff;
+  if (tierOf(a) === 0) return b.trendingScore! - a.trendingScore!;
+  return b.metricValue - a.metricValue;
+}
+
+// A keyword discovered independently by more than one source that day (e.g.
+// both Threads and YouTube surface "việt nam" as their own candidate) would
+// otherwise take up more than one slot in a short top-N list. Collapsing
+// same-keyword rows into one: metricValue sums across sources (their real
+// combined volume); trendingScore/categoryHint/createdAt/id come from
+// whichever source ranks best by the exact tier rule the final list sorts
+// by (compareByRank), so a merged row is never ranked worse than showing
+// that source alone would have been. shareOfVoice is dropped to null — it's
+// a % of one source's own daily total, and summing or averaging that across
+// sources with different totals wouldn't mean anything.
+function mergeSameKeyword<T extends HotTopicRow>(rows: T[]): T[] {
+  const byKeyword = new Map<string, T[]>();
+  for (const row of rows) {
+    const group = byKeyword.get(row.keyword);
+    if (group) group.push(row);
+    else byKeyword.set(row.keyword, [row]);
+  }
+
+  const merged: T[] = [];
+  for (const group of byKeyword.values()) {
+    if (group.length === 1) {
+      merged.push(group[0]);
+      continue;
+    }
+    const representative = [...group].sort(compareByRank)[0];
+    const dominant = [...group].sort((a, b) => b.metricValue - a.metricValue)[0];
+    const createdAt = group
+      .map((r) => r.createdAt)
+      .filter((d): d is string => d !== undefined)
+      .sort()
+      .at(-1);
+    merged.push({
+      ...representative,
+      source: dominant.source,
+      sources: Array.from(new Set(group.map((r) => r.source))).sort(),
+      metricValue: group.reduce((sum, r) => sum + r.metricValue, 0),
+      shareOfVoice: null,
+      categoryHint: Array.from(new Set(group.flatMap((r) => r.categoryHint ?? []))),
+      createdAt,
+    });
+  }
+  return merged;
+}
+
 // Gộp bySource (dùng cho Overview/sector pages, chia theo 3 nguồn) thành 1
 // mảng duy nhất. Nhận HotTopicRow (không chỉ EnrichedHotTopicRow) vì chỉ
 // đụng tới trendingScore/metricValue — dùng chung cho Trending Now (rows đã
@@ -26,10 +77,5 @@ export function flattenAndRankHotTopics<T extends HotTopicRow>(
 ): T[] {
   const sources = Object.keys(bySource) as CandidateTopic['source'][];
   const all = sources.flatMap((source) => bySource[source]);
-  return [...all].sort((a, b) => {
-    const tierDiff = tierOf(a) - tierOf(b);
-    if (tierDiff !== 0) return tierDiff;
-    if (tierOf(a) === 0) return b.trendingScore! - a.trendingScore!;
-    return b.metricValue - a.metricValue;
-  });
+  return mergeSameKeyword(all).sort(compareByRank);
 }
