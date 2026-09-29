@@ -7,6 +7,7 @@ import { YouTubeTrendingSource } from './lib/youtube-source';
 import { RssTopicSource } from './lib/rss-topic-source';
 import { RealYouTubeSearchClient } from './lib/youtube-search-client';
 import { OpenAiCandidateClassifier } from './lib/candidate-classifier';
+import { OpenAiRssTopicExtractor, type RssTopicExtractor } from './lib/rss-topic-extractor';
 import type { DiscoverySource } from './lib/discovery-source';
 import type { CandidateClassifier } from './lib/candidate-classifier';
 import { ingestAllDiscoverySources } from './discovery-ingest';
@@ -16,21 +17,26 @@ async function main() {
   const repo = new SupabaseCandidateTopicRepository(client);
   const articleRepo = new SupabaseArticleRepository(client);
 
-  const sources: DiscoverySource[] = [new GoogleTrendsSource(), new RssTopicSource(articleRepo)];
+  const openaiApiKey = process.env.OPENAI_API_KEY;
+  let classifier: CandidateClassifier | undefined;
+  let rssTopicExtractor: RssTopicExtractor | undefined;
+  if (openaiApiKey) {
+    classifier = new OpenAiCandidateClassifier(openaiApiKey);
+    rssTopicExtractor = new OpenAiRssTopicExtractor(openaiApiKey);
+  } else {
+    console.error('OPENAI_API_KEY not set — skipping LLM classification and RSS topic extraction');
+  }
+
+  const sources: DiscoverySource[] = [
+    new GoogleTrendsSource(),
+    new RssTopicSource(articleRepo, rssTopicExtractor),
+  ];
 
   const youtubeApiKey = process.env.YOUTUBE_API_KEY;
   if (youtubeApiKey) {
     sources.push(new YouTubeTrendingSource(youtubeApiKey, new RealYouTubeSearchClient(youtubeApiKey)));
   } else {
     console.error('YOUTUBE_API_KEY not set — skipping YouTube source');
-  }
-
-  const openaiApiKey = process.env.OPENAI_API_KEY;
-  let classifier: CandidateClassifier | undefined;
-  if (openaiApiKey) {
-    classifier = new OpenAiCandidateClassifier(openaiApiKey);
-  } else {
-    console.error('OPENAI_API_KEY not set — skipping LLM classification for unmatched candidates');
   }
 
   const results = await ingestAllDiscoverySources(sources, { repo, classifier });
