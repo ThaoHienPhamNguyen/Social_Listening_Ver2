@@ -4,10 +4,16 @@ const STOP_WORDS = new Set([
   'tại', 'theo', 'sau', 'trên', 'đến', 'ra', 'vào', 'thì', 'lại', 'nên',
 ]);
 
-// Clause boundaries within a headline — a capitalized word right after one
-// of these is capitalized by sentence-position convention, not because it's
-// a proper noun (see extractEntityPhrases).
-const CLAUSE_BREAK = /[.!?:;]/;
+// Clause boundaries within a headline or post — a capitalized word right
+// after one of these is capitalized by sentence-position convention, not
+// because it's a proper noun (see extractEntityPhrases). Includes newline:
+// social posts (Threads) routinely start a new sentence on a new line
+// without any punctuation before it — without this, a capitalized word that
+// only opens the next line/thought gets treated as still inside the
+// previous line's entity run and wrongly merged onto it (a real production
+// case: "...là\n\"Mai Quốc Khánh\"\nSinh ngày 3.9..." merged "Sinh" from the
+// next line into the name, producing "mai quốc khánh sinh").
+const CLAUSE_BREAK = /[.!?:;\n]/;
 
 function isCapitalized(token: string): boolean {
   return /^\p{Lu}/u.test(token);

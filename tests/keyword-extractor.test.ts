@@ -89,4 +89,13 @@ describe('extractKeywords', () => {
       expect(result.some((k) => k.includes('kinh doanh'))).toBe(false);
     });
   });
+
+  it('treats a newline as a clause boundary, so a capitalized word that only opens the next line is not merged into the previous line\'s entity', () => {
+    // Real production case: "Sinh" (capitalized only because it opens a new
+    // line/thought) was getting merged onto the preceding quoted name,
+    // producing the nonsense candidate "mai quốc khánh sinh".
+    const result = extractKeywords('thì đặt tên là\n " Mai Quốc Khánh"\nSinh ngày 3.9 thì nên đặt tên là gì ạ');
+    expect(result).toContain('mai quốc khánh');
+    expect(result).not.toContain('mai quốc khánh sinh');
+  });
 });
