@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseTopicsResponse } from '../src/lib/rss-topic-extractor';
+import { parseTopicsResponse } from '../src/lib/topic-extractor';
 
 describe('parseTopicsResponse', () => {
   it('parses a valid response into a positional string[][]', () => {

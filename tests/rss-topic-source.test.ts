@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { RssTopicSource } from '../src/lib/rss-topic-source';
 import { FakeArticleRepository } from './fakes/fake-article-repository';
-import { FakeRssTopicExtractor } from './fakes/fake-rss-topic-extractor';
+import { FakeTopicExtractor } from './fakes/fake-topic-extractor';
 import type { Article } from '../src/types';
 
 function makeArticle(id: string, title: string, categories: string[] = []): Article {
@@ -49,7 +49,7 @@ describe('RssTopicSource', () => {
 
   it('produces no candidates and never calls the extractor when there are no recent articles', async () => {
     const repo = new FakeArticleRepository();
-    const extractor = new FakeRssTopicExtractor();
+    const extractor = new FakeTopicExtractor();
     const source = new RssTopicSource(repo, extractor);
 
     const candidates = await source.fetchCandidates();
@@ -61,8 +61,8 @@ describe('RssTopicSource', () => {
   it('uses the extractor topics instead of the regex fallback when the extractor succeeds', async () => {
     const repo = new FakeArticleRepository();
     repo.articles.push(makeArticle('1', 'Novaland chào bán cổ phiếu tỉ lệ 3:1'));
-    const extractor = new FakeRssTopicExtractor();
-    extractor.topicsByTitle['Novaland chào bán cổ phiếu tỉ lệ 3:1'] = ['novaland', 'chào bán cổ phiếu'];
+    const extractor = new FakeTopicExtractor();
+    extractor.topicsByText['Novaland chào bán cổ phiếu tỉ lệ 3:1'] = ['novaland', 'chào bán cổ phiếu'];
     const source = new RssTopicSource(repo, extractor);
 
     const candidates = await source.fetchCandidates();
@@ -73,7 +73,7 @@ describe('RssTopicSource', () => {
   it('falls back to extractKeywords for a chunk when the extractor throws', async () => {
     const repo = new FakeArticleRepository();
     repo.articles.push(makeArticle('1', 'Giá vàng tăng mạnh'));
-    const extractor = new FakeRssTopicExtractor();
+    const extractor = new FakeTopicExtractor();
     extractor.shouldThrow = true;
     const source = new RssTopicSource(repo, extractor);
 
@@ -96,7 +96,7 @@ describe('RssTopicSource', () => {
     const repo = new FakeArticleRepository();
     repo.articles.push(makeArticle('1', 'Tiêu đề một'));
     repo.articles.push(makeArticle('2', 'Tiêu đề hai'));
-    const extractor = new FakeRssTopicExtractor();
+    const extractor = new FakeTopicExtractor();
     extractor.extractTopics = async () => [['tiêu đề một']]; // only 1 entry for 2 titles
     const source = new RssTopicSource(repo, extractor);
 
@@ -116,7 +116,7 @@ describe('RssTopicSource', () => {
     for (let i = 0; i < 5; i++) {
       repo.articles.push(makeArticle(`b${i}`, `Bài viết riêng số ${i}`));
     }
-    const extractor = new FakeRssTopicExtractor();
+    const extractor = new FakeTopicExtractor();
     let callCount = 0;
     extractor.extractTopics = async (titles: string[]) => {
       callCount += 1;

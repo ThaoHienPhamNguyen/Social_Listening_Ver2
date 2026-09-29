@@ -7,7 +7,7 @@ import { YouTubeTrendingSource } from './lib/youtube-source';
 import { RssTopicSource } from './lib/rss-topic-source';
 import { RealYouTubeSearchClient } from './lib/youtube-search-client';
 import { OpenAiCandidateClassifier } from './lib/candidate-classifier';
-import { OpenAiRssTopicExtractor, type RssTopicExtractor } from './lib/rss-topic-extractor';
+import { OpenAiTopicExtractor, type TopicExtractor } from './lib/topic-extractor';
 import type { DiscoverySource } from './lib/discovery-source';
 import type { CandidateClassifier } from './lib/candidate-classifier';
 import { ingestAllDiscoverySources } from './discovery-ingest';
@@ -19,10 +19,10 @@ async function main() {
 
   const openaiApiKey = process.env.OPENAI_API_KEY;
   let classifier: CandidateClassifier | undefined;
-  let rssTopicExtractor: RssTopicExtractor | undefined;
+  let rssTopicExtractor: TopicExtractor | undefined;
   if (openaiApiKey) {
     classifier = new OpenAiCandidateClassifier(openaiApiKey);
-    rssTopicExtractor = new OpenAiRssTopicExtractor(openaiApiKey);
+    rssTopicExtractor = new OpenAiTopicExtractor(openaiApiKey);
   } else {
     console.error('OPENAI_API_KEY not set — skipping LLM classification and RSS topic extraction');
   }

@@ -1,7 +1,7 @@
 import type { DiscoverySource } from './discovery-source';
 import type { RawCandidate } from '../types';
 import type { ArticleRepository } from './article-repository';
-import type { RssTopicExtractor } from './rss-topic-extractor';
+import type { TopicExtractor } from './topic-extractor';
 import { aggregateRssKeywords } from './aggregate-rss-keywords';
 import { extractKeywords } from './keyword-extractor';
 
@@ -29,7 +29,7 @@ export class RssTopicSource implements DiscoverySource {
 
   constructor(
     private repo: Pick<ArticleRepository, 'getRecentTitles'>,
-    private extractor?: RssTopicExtractor
+    private extractor?: TopicExtractor
   ) {}
 
   async fetchCandidates(): Promise<RawCandidate[]> {
