@@ -23,6 +23,17 @@ describe('toRawCandidates', () => {
     expect(result).toEqual([{ keyword: 'bitcoin', metric_value: 5000, growth_rate: 2 }]);
   });
 
+  it('drops a known-generic single word ("xe") that Google Trends gives no extra context for', () => {
+    const result = toRawCandidates([{ keyword: 'Xe', traffic: 10000, trafficGrowthRate: 1000 }]);
+    expect(result).toEqual([]);
+  });
+
+  it('keeps a specific single-word entity that is not on the generic list', () => {
+    const result = toRawCandidates([{ keyword: 'Bitcoin', traffic: 5000, trafficGrowthRate: 200 }]);
+    expect(result).toHaveLength(1);
+    expect(result[0].keyword).toBe('bitcoin');
+  });
+
   it('deduplicates items whose keyword collides after lowercase/trim normalization, keeping the higher-traffic one', () => {
     // A bulk upsert of a batch containing two rows with the same
     // (source, keyword, date) key fails Postgres's ON CONFLICT clause for the

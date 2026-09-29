@@ -36,6 +36,17 @@ export interface GoogleTrendsItem {
   trafficGrowthRate: number;
 }
 
+// Google Trends' daily list gives no extra context to tell a specific
+// single-word entity ("bitcoin") apart from a hopelessly generic one ("xe",
+// "thuế") — verified against a real API pull: relatedKeywords for these
+// generic terms is just the term itself, no elaboration, unlike genuinely
+// specific trends whose relatedKeywords add real detail (e.g. a player's
+// name for a match). There's also no capitalization signal to lean on the
+// way RSS/Threads text extraction does — Google's response is already
+// lowercase. Hand-curated; add more here as they show up in production,
+// same maintenance model as keyword-extractor.ts's GENERIC_PHRASES.
+const GENERIC_SINGLE_WORDS = new Set(['xe', 'lào', 'thuế']);
+
 // Google's own trending list doesn't contain duplicates, but our own
 // lowercase/trim normalization (below) can still collapse two distinct
 // entries into the same keyword. A batch upsert with two rows sharing one
@@ -46,6 +57,7 @@ export function toRawCandidates(items: GoogleTrendsItem[]): RawCandidate[] {
   const byKeyword = new Map<string, RawCandidate>();
   for (const item of items) {
     const keyword = item.keyword.toLowerCase().trim();
+    if (GENERIC_SINGLE_WORDS.has(keyword)) continue;
     const existing = byKeyword.get(keyword);
     if (existing && existing.metric_value >= item.traffic) continue;
     byKeyword.set(keyword, {
