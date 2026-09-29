@@ -3,6 +3,7 @@ import { getRequiredEnv } from './lib/env';
 import { SupabaseCandidateTopicRepository } from './lib/candidate-topic-repository';
 import { SupabaseTopicSocialDataRepository } from './lib/topic-social-data-repository';
 import { ApifyThreadsSearchClient } from './lib/apify-threads-client';
+import { OpenAiTopicExtractor, type TopicExtractor } from './lib/topic-extractor';
 import { runDeepCrawl } from './deep-crawl';
 
 async function main() {
@@ -11,7 +12,15 @@ async function main() {
   const socialRepo = new SupabaseTopicSocialDataRepository(client);
   const apifyClient = new ApifyThreadsSearchClient(getRequiredEnv('APIFY_TOKEN'));
 
-  const result = await runDeepCrawl({ candidateRepo, socialRepo, client: apifyClient });
+  const openaiApiKey = process.env.OPENAI_API_KEY;
+  let extractor: TopicExtractor | undefined;
+  if (openaiApiKey) {
+    extractor = new OpenAiTopicExtractor(openaiApiKey);
+  } else {
+    console.error('OPENAI_API_KEY not set — skipping LLM topic extraction for Threads posts');
+  }
+
+  const result = await runDeepCrawl({ candidateRepo, socialRepo, client: apifyClient, extractor });
 
   if (result.skipped) {
     console.log('Deep-crawl already ran today — skipped.');

@@ -2,10 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { aggregateThreadsKeywords } from '../src/lib/aggregate-threads-keywords';
 import type { ThreadsPost } from '../src/lib/apify-threads-client';
 
-function post(overrides: Partial<ThreadsPost> = {}): ThreadsPost {
+function post(overrides: Partial<ThreadsPost & { topics: string[] }> = {}): ThreadsPost & { topics: string[] } {
   return {
     post_url: 'https://threads.net/p/1',
     text_content: 'giá vàng hôm nay tăng mạnh',
+    topics: ['giá vàng'],
     like_count: 1,
     reply_count: 1,
     repost_count: 0,
@@ -18,10 +19,10 @@ function post(overrides: Partial<ThreadsPost> = {}): ThreadsPost {
 }
 
 describe('aggregateThreadsKeywords', () => {
-  it('sums like+reply+repost+quote+share (not view_count) per extracted bigram', () => {
+  it('sums like+reply+repost+quote+share (not view_count) per topic', () => {
     const posts = [
       post({
-        text_content: 'giá vàng hôm nay',
+        topics: ['giá vàng'],
         like_count: 10,
         reply_count: 2,
         repost_count: 1,
@@ -36,7 +37,7 @@ describe('aggregateThreadsKeywords', () => {
   });
 
   it('tags every candidate with the passed-in category as knownCategories, and growth_rate null', () => {
-    const posts = [post({ text_content: 'giá vàng hôm nay' })];
+    const posts = [post({ topics: ['giá vàng'] })];
     const result = aggregateThreadsKeywords(posts, 'tai_chinh');
     expect(result[0].knownCategories).toEqual(['tai_chinh']);
     expect(result[0].growth_rate).toBeNull();
@@ -45,7 +46,7 @@ describe('aggregateThreadsKeywords', () => {
   it('treats null engagement fields as 0', () => {
     const posts = [
       post({
-        text_content: 'giá vàng hôm nay',
+        topics: ['giá vàng'],
         like_count: null,
         reply_count: null,
         repost_count: null,
@@ -57,19 +58,16 @@ describe('aggregateThreadsKeywords', () => {
     expect(result.find((c) => c.keyword === 'giá vàng')?.metric_value).toBe(0);
   });
 
-  it('skips posts with empty text_content', () => {
-    const posts = [post({ text_content: '' })];
+  it('contributes nothing for a post with no topics', () => {
+    const posts = [post({ text_content: '', topics: [] })];
     const result = aggregateThreadsKeywords(posts, 'tai_chinh');
     expect(result).toEqual([]);
   });
 
-  it('does not double-count a repeated bigram within the same post', () => {
-    // "vàng hôm nay" would appear as a bigram once ("hôm nay"); this test
-    // checks that a post whose text is short still yields a single row per
-    // distinct bigram, not per occurrence.
+  it('does not double-count a repeated topic within the same post', () => {
     const posts = [
       post({
-        text_content: 'vàng vàng hôm nay',
+        topics: ['vàng vàng', 'vàng vàng'],
         like_count: 5,
         reply_count: 0,
         repost_count: 0,

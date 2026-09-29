@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { runDeepCrawl } from '../src/deep-crawl';
 import { FakeCandidateTopicRepository } from './fakes/fake-candidate-topic-repository';
 import { FakeTopicSocialDataRepository } from './fakes/fake-topic-social-data-repository';
+import { FakeTopicExtractor } from './fakes/fake-topic-extractor';
 import type { ThreadsSearchClient, ThreadsPost } from '../src/lib/apify-threads-client';
 
 function post(overrides: Partial<ThreadsPost> = {}): ThreadsPost {
@@ -175,5 +176,73 @@ describe('runDeepCrawl', () => {
     expect(result.candidatesUpserted).toBe(0);
     expect(result.postsUpserted).toBe(0);
     expect(result.errors).toEqual([]);
+  });
+
+  it('uses the extractor topics instead of the regex fallback when the extractor succeeds', async () => {
+    const candidateRepo = new FakeCandidateTopicRepository();
+    const socialRepo = new FakeTopicSocialDataRepository();
+    const client = new FakeThreadsSearchClient();
+    client.postsByKeyword['chứng khoán'] = [
+      post({ post_url: 'https://threads.net/p/1', text_content: 'Novaland chào bán cổ phiếu tỉ lệ 3:1' }),
+    ];
+    const extractor = new FakeTopicExtractor();
+    extractor.topicsByText['Novaland chào bán cổ phiếu tỉ lệ 3:1'] = ['novaland', 'chào bán cổ phiếu'];
+
+    const result = await runDeepCrawl({ candidateRepo, socialRepo, client, extractor, now: NOW });
+
+    expect(result.errors).toEqual([]);
+    const socialRow = socialRepo.posts.find((p) => p.post_url === 'https://threads.net/p/1');
+    expect(socialRow?.keyword).toBe('novaland');
+    expect(candidateRepo.candidates.map((c) => c.keyword)).toContain('chào bán cổ phiếu');
+  });
+
+  it('falls back to extractKeywords for a chunk when the extractor throws', async () => {
+    const candidateRepo = new FakeCandidateTopicRepository();
+    const socialRepo = new FakeTopicSocialDataRepository();
+    const client = new FakeThreadsSearchClient();
+    client.postsByKeyword['chứng khoán'] = [
+      post({ post_url: 'https://threads.net/p/1', text_content: 'giá vàng hôm nay tăng mạnh' }),
+    ];
+    const extractor = new FakeTopicExtractor();
+    extractor.shouldThrow = true;
+
+    const result = await runDeepCrawl({ candidateRepo, socialRepo, client, extractor, now: NOW });
+
+    expect(result.errors).toEqual([]);
+    const socialRow = socialRepo.posts.find((p) => p.post_url === 'https://threads.net/p/1');
+    expect(socialRow?.keyword).toBe('giá vàng');
+  });
+
+  it('truncates post text before sending it to the extractor, but the regex fallback still sees the full text', async () => {
+    const candidateRepo = new FakeCandidateTopicRepository();
+    const socialRepo = new FakeTopicSocialDataRepository();
+    const client = new FakeThreadsSearchClient();
+    const longText = 'giá vàng hôm nay ' + 'x'.repeat(600);
+    client.postsByKeyword['chứng khoán'] = [post({ post_url: 'https://threads.net/p/1', text_content: longText })];
+    const extractor = new FakeTopicExtractor();
+
+    await runDeepCrawl({ candidateRepo, socialRepo, client, extractor, now: NOW });
+
+    expect(extractor.calls).toHaveLength(1);
+    expect(extractor.calls[0][0].length).toBeLessThanOrEqual(500);
+    expect(extractor.calls[0][0]).toBe(longText.slice(0, 500));
+  });
+
+  it('only extracts topics once per post — the same call feeds both the social row and the category candidate aggregation', async () => {
+    const candidateRepo = new FakeCandidateTopicRepository();
+    const socialRepo = new FakeTopicSocialDataRepository();
+    const client = new FakeThreadsSearchClient();
+    client.postsByKeyword['chứng khoán'] = [
+      post({ post_url: 'https://threads.net/p/1', text_content: 'giá vàng hôm nay' }),
+    ];
+    const extractor = new FakeTopicExtractor();
+    extractor.topicsByText['giá vàng hôm nay'] = ['giá vàng'];
+
+    await runDeepCrawl({ candidateRepo, socialRepo, client, extractor, now: NOW });
+
+    // 6 queries total (THREADS_DISCOVERY_QUERIES), only 1 returns a post —
+    // exactly 1 extractor call, not 2 (once for the social row, once again
+    // for aggregation).
+    expect(extractor.calls).toHaveLength(1);
   });
 });

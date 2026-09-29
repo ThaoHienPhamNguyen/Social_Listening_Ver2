@@ -37,6 +37,11 @@ describe('.github/workflows/discovery-ingestion.yml', () => {
     expect(step?.env?.APIFY_TOKEN).toBe('${{ secrets.APIFY_TOKEN }}');
   });
 
+  it('passes OPENAI_API_KEY through to the deep-crawl job for LLM topic extraction', () => {
+    const step = doc['jobs']['deep-crawl']['steps'].find((s: any) => s.run === 'npm run deep-crawl');
+    expect(step?.env?.OPENAI_API_KEY).toBe('${{ secrets.OPENAI_API_KEY }}');
+  });
+
   it('gates aggregate-engagement on deep-crawl via needs', () => {
     expect(doc['jobs']['aggregate-engagement']['needs']).toEqual(['deep-crawl']);
   });
