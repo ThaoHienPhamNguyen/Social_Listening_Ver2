@@ -5,6 +5,44 @@ export interface RssTopicExtractor {
 const FETCH_TIMEOUT_MS = 60000;
 const MODEL = 'gpt-5-nano';
 
+// Parses and validates the LLM's raw JSON response into a positional
+// string[][] (one entry per title, same order/length as `titleCount`).
+// Exported so it can be unit-tested directly without mocking the network.
+//
+// `content` is untrusted model output — a type annotation on JSON.parse's
+// result is not a runtime guarantee (same convention as discovery-ingest.ts's
+// classification-response handling). Two different failure classes here:
+//   - The WHOLE response is unusable (empty content, unparseable JSON, or no
+//     usable entry for ANY index) → throw, so RssTopicSource's catch falls
+//     back to extractKeywords() for this chunk instead of silently
+//     contributing zero candidates.
+//   - A SINGLE index's value is the wrong shape (not an array, or an array
+//     with non-string/blank elements) → treat only that index as having no
+//     topics; not the same failure class as the whole chunk being unusable.
+export function parseTopicsResponse(content: string, titleCount: number): string[][] {
+  if (!content) {
+    throw new Error('RSS topic extraction returned empty content');
+  }
+
+  const parsed = JSON.parse(content) as Record<string, unknown>;
+
+  const hasUsableEntry = Array.from({ length: titleCount }, (_, i) => String(i)).some(
+    (key) => key in parsed
+  );
+  if (!hasUsableEntry) {
+    throw new Error('RSS topic extraction response had no usable entries for any title');
+  }
+
+  return Array.from({ length: titleCount }, (_, i) => {
+    const value = parsed[String(i)];
+    if (!Array.isArray(value)) return [];
+    return value
+      .filter((topic): topic is string => typeof topic === 'string')
+      .map((topic) => topic.trim().toLowerCase())
+      .filter((topic) => topic.length > 0);
+  });
+}
+
 // Real adapter over OpenAI's Chat Completions API, called via native fetch —
 // same convention as OpenAiCandidateClassifier (no `openai` npm dependency).
 // Reads a batch of RSS headlines and asks the model for 1-3 specific topic
@@ -52,9 +90,7 @@ export class OpenAiRssTopicExtractor implements RssTopicExtractor {
       }
       const body = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
       const content = body.choices?.[0]?.message?.content;
-      if (!content) return titles.map(() => []);
-      const parsed = JSON.parse(content) as Record<string, string[]>;
-      return titles.map((_, i) => parsed[String(i)] ?? []);
+      return parseTopicsResponse(content ?? '', titles.length);
     } finally {
       clearTimeout(timeout);
     }

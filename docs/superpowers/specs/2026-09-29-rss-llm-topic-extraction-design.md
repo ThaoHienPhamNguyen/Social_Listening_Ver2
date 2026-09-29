@@ -35,9 +35,11 @@ RssTopicSource.fetchCandidates()
   1. repo.getRecentTitles(1) → { title, categories }[]  (không đổi)
   2. chia thành lô 20 tiêu đề/lô (CHUNK_SIZE, giống quy ước sentiment-classifier cũ)
   3. với mỗi lô:
-       try: extractor.extractTopics(titles trong lô) → Map<title, string[]>
+       try: extractor.extractTopics(titles trong lô) → string[][] (theo thứ tự
+            index, khớp với thứ tự titles truyền vào — không dùng title làm key)
        catch: fallback — với mỗi title trong lô, topics = extractKeywords(title)
-  4. gộp kết quả tất cả lô thành { title, categories, topics }[]
+  4. gộp kết quả tất cả lô thành { topics, categories }[] (không cần field
+     title nữa — đã dùng xong để tra topics theo index ở bước 3)
   5. aggregateRssKeywords(đầu vào mới) → RawCandidate[]  (đếm/gộp/cap 200 — không đổi logic)
 ```
 
@@ -88,7 +90,7 @@ Bước này khác: input là ~300 tiêu đề/ngày (chưa gộp, nhiều hơn 
 
 - `OpenAiRssTopicExtractor` (adapter gọi API thật): không unit test tự động — verify thủ công 1 lần khi có key thật, đúng quy ước đã áp dụng cho mọi adapter gọi mạng thật khác trong codebase này (`ApifyThreadsSearchClient`, `OpenAiCandidateClassifier`...).
 - `RssTopicSource`: test bằng Fake extractor — case lô thành công (dùng topics từ extractor), case lô lỗi/throw (fallback đúng sang `extractKeywords()`), case extractor = undefined (fallback toàn bộ), case trộn lẫn nhiều lô (1 lô lỗi không ảnh hưởng lô khác).
-- `aggregate-rss-keywords.ts`: cập nhật test theo shape input mới (`{title, categories, topics}[]`) — logic đếm/gộp/cap không đổi, chỉ đổi input.
+- `aggregate-rss-keywords.ts`: cập nhật test theo shape input mới (`{topics, categories}[]`, không có field `title` — hàm này chỉ đếm/gộp/cap, không cần biết topics đến từ bài nào) — logic đếm/gộp/cap không đổi, chỉ đổi input.
 
 ## 8. Rủi ro & đã cân nhắc
 

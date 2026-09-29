@@ -43,10 +43,17 @@ export class RssTopicSource implements DiscoverySource {
       if (this.extractor) {
         try {
           topicsPerTitle = await this.extractor.extractTopics(titles);
-        } catch {
+        } catch (err) {
           // One chunk's LLM failure must not drop or block any other chunk,
           // or RSS's candidates for the day entirely — fall back to the
-          // regex extractor for exactly this chunk's titles.
+          // regex extractor for exactly this chunk's titles. Logged (not
+          // pushed to result.errors — that's a deliberate scope boundary for
+          // this fix wave, see final-fix-report.md finding 3) so a silently
+          // failing API key/quota/model doesn't run 100% on regex forever
+          // with zero production visibility.
+          console.error(
+            `RSS topic extraction failed for a chunk of ${titles.length} titles, falling back to regex: ${(err as Error).message}`
+          );
           topicsPerTitle = titles.map((t) => extractKeywords(t));
         }
       } else {
