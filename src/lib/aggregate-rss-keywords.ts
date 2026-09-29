@@ -1,4 +1,3 @@
-import { extractKeywords } from './keyword-extractor';
 import { capCandidates } from './cap-candidates';
 import type { Category, RawCandidate } from '../types';
 
@@ -7,14 +6,18 @@ import type { Category, RawCandidate } from '../types';
 // here bounds per-day row volume and write cost without affecting outcomes.
 const MAX_CANDIDATES = 200;
 
+// `topics` is pre-computed per article by the caller (RssTopicSource) —
+// either from the LLM extractor or, as a fallback, from keyword-extractor.ts.
+// This function only counts/aggregates; it does not know or care where the
+// topics came from.
 export function aggregateRssKeywords(
-  articles: { title: string; categories: string[] }[]
+  articles: { topics: string[]; categories: string[] }[]
 ): RawCandidate[] {
   const counts = new Map<string, number>();
   const categoriesByKeyword = new Map<string, Set<Category>>();
 
   for (const article of articles) {
-    for (const keyword of new Set(extractKeywords(article.title))) {
+    for (const keyword of new Set(article.topics)) {
       counts.set(keyword, (counts.get(keyword) ?? 0) + 1);
       const existing = categoriesByKeyword.get(keyword) ?? new Set<Category>();
       for (const category of article.categories) {

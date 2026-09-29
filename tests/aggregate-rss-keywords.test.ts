@@ -1,45 +1,45 @@
 import { describe, it, expect } from 'vitest';
 import { aggregateRssKeywords } from '../src/lib/aggregate-rss-keywords';
 
-function article(title: string, categories: string[] = []) {
-  return { title, categories };
+function article(topics: string[], categories: string[] = []) {
+  return { topics, categories };
 }
 
 describe('aggregateRssKeywords', () => {
-  it('counts how many titles each keyword appears in', () => {
+  it('counts how many articles each topic appears in', () => {
     const result = aggregateRssKeywords([
-      article('Giá vàng tăng mạnh'),
-      article('Giá vàng lập đỉnh mới'),
-      article('Chứng khoán giảm'),
+      article(['giá vàng']),
+      article(['giá vàng', 'lập đỉnh']),
+      article(['chứng khoán']),
     ]);
     const giaVang = result.find((r) => r.keyword === 'giá vàng');
     expect(giaVang).toBeDefined();
     expect(giaVang!.metric_value).toBe(2);
   });
 
-  it('counts a keyword at most once per title even if it repeats within that title', () => {
-    const result = aggregateRssKeywords([article('vàng vàng vàng')]);
+  it('counts a topic at most once per article even if it repeats within that article\'s topic list', () => {
+    const result = aggregateRssKeywords([article(['vàng vàng', 'vàng vàng'])]);
     const vangVang = result.find((r) => r.keyword === 'vàng vàng');
     expect(vangVang!.metric_value).toBe(1);
   });
 
   it('leaves growth_rate null for every keyword', () => {
-    const result = aggregateRssKeywords([article('Một tiêu đề bất kỳ')]);
+    const result = aggregateRssKeywords([article(['một chủ đề'])]);
     expect(result.every((r) => r.growth_rate === null)).toBe(true);
   });
 
   it('caps the result to the top 200 keywords by metric_value', () => {
-    // 210 titles, each containing a unique 3+ char keyword that appears only
-    // once — aggregateRssKeywords would otherwise emit 210 distinct keywords.
-    const articles = Array.from({ length: 210 }, (_, i) => article(`duy nhat tukhoa${i}`));
+    // 210 articles, each with a unique topic that appears only once —
+    // aggregateRssKeywords would otherwise emit 210 distinct keywords.
+    const articles = Array.from({ length: 210 }, (_, i) => article([`duy nhat tukhoa${i}`]));
     const result = aggregateRssKeywords(articles);
     expect(result.length).toBeLessThanOrEqual(200);
   });
 
-  it('unions categories from every article a keyword appears in', () => {
+  it('unions categories from every article a topic appears in', () => {
     const result = aggregateRssKeywords([
-      article('Chứng khoán tăng vọt hôm nay', ['tai_chinh']),
-      article('Ca sĩ nổi tiếng đầu tư chứng khoán', ['giai_tri']),
+      article(['chứng khoán'], ['tai_chinh']),
+      article(['chứng khoán'], ['giai_tri']),
     ]);
     const chungKhoan = result.find((r) => r.keyword === 'chứng khoán');
     expect(chungKhoan).toBeDefined();
@@ -47,7 +47,12 @@ describe('aggregateRssKeywords', () => {
   });
 
   it('leaves knownCategories empty when the source article has no categories', () => {
-    const result = aggregateRssKeywords([article('Một tiêu đề bất kỳ', [])]);
+    const result = aggregateRssKeywords([article(['một chủ đề'], [])]);
     expect(result.every((r) => (r.knownCategories ?? []).length === 0)).toBe(true);
+  });
+
+  it('produces no candidates when there are no articles', () => {
+    const result = aggregateRssKeywords([]);
+    expect(result).toEqual([]);
   });
 });
