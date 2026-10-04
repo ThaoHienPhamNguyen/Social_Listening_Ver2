@@ -53,6 +53,7 @@ export interface CandidateTopic {
   growth_rate: number | null;
   category_hint: string[];
   is_shortlisted: boolean;
+  summary?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -73,6 +74,19 @@ export interface TopicSocialData {
   share_count: number | null;
   view_count: number | null;
   posted_at: string | null;
+  fetched_at?: string;
+}
+
+export type TopicArticleSourceName = 'rss';
+
+export interface TopicArticleData {
+  id?: string;
+  keyword: string;
+  source: TopicArticleSourceName;
+  date: string;
+  article_url: string;
+  article_title: string;
+  article_snippet: string;
   fetched_at?: string;
 }
 

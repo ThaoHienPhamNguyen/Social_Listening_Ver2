@@ -13,6 +13,8 @@ export interface CandidateTopic {
   growth_rate: number | null;
   category_hint: string[];
   is_shortlisted: boolean;
+  summary?: string | null; // null = not summarized (google_trends/youtube rows,
+  // or an rss/threads row the summarize-topics job hasn't reached/succeeded for yet)
   created_at?: string; // ISO timestamp — always present on real Supabase rows
   // (column is NOT NULL), optional here only so existing test fixtures that
   // build CandidateTopic literals without it don't need updating (same
