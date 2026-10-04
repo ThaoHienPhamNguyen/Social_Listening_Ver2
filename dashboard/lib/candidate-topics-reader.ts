@@ -46,7 +46,7 @@ export class SupabaseCandidateTopicsReader implements CandidateTopicsReader {
     return fetchAllPages<CandidateTopic>((from, to) =>
       this.client
         .from('candidate_topics')
-        .select('id, source, keyword, date, metric_value, growth_rate, category_hint, is_shortlisted, created_at')
+        .select('id, source, keyword, date, metric_value, growth_rate, category_hint, is_shortlisted, created_at, summary')
         .eq('date', date)
         .order('metric_value', { ascending: false })
         .order('id', { ascending: true })
@@ -58,7 +58,7 @@ export class SupabaseCandidateTopicsReader implements CandidateTopicsReader {
     return fetchAllPages<CandidateTopic>((from, to) =>
       this.client
         .from('candidate_topics')
-        .select('id, source, keyword, date, metric_value, growth_rate, category_hint, is_shortlisted, created_at')
+        .select('id, source, keyword, date, metric_value, growth_rate, category_hint, is_shortlisted, created_at, summary')
         .eq('keyword', keyword)
         .gte('date', startDate)
         .lt('date', endDateExclusive)
@@ -75,7 +75,7 @@ export class SupabaseCandidateTopicsReader implements CandidateTopicsReader {
     return fetchAllPages<CandidateTopic>((from, to) =>
       this.client
         .from('candidate_topics')
-        .select('id, source, keyword, date, metric_value, growth_rate, category_hint, is_shortlisted, created_at')
+        .select('id, source, keyword, date, metric_value, growth_rate, category_hint, is_shortlisted, created_at, summary')
         .eq('is_shortlisted', true)
         .contains('category_hint', [category])
         .gte('date', startDate)

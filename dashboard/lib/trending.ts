@@ -70,6 +70,7 @@ function mergeSameKeyword<T extends HotTopicRow>(rows: T[]): T[] {
       shareOfVoice: null,
       categoryHint: Array.from(new Set(group.flatMap((r) => r.categoryHint ?? []))),
       createdAt,
+      summary: representative.summary ?? group.map((r) => r.summary).find((s) => s != null) ?? null,
     });
   }
   return merged;

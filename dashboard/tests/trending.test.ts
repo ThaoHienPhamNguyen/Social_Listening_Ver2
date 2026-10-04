@@ -209,5 +209,33 @@ describe('flattenAndRankHotTopics', () => {
       expect(result[0].sources).toBeUndefined();
       expect(result[0].shareOfVoice).toBe(42);
     });
+
+    it('keeps the non-null summary when the best-tier merge representative has none', () => {
+      const bySource = {
+        google_trends: [row({ id: 'gt', keyword: 'ngân hàng', source: 'google_trends', trendingScore: 1000, summary: null })],
+        youtube: [],
+        threads: [row({ id: 'th', keyword: 'ngân hàng', source: 'threads', trendingScore: 100, summary: 'Một ngân hàng tăng lãi suất.' })],
+        rss: [],
+        facebook: [],
+      };
+      const result = flattenAndRankHotTopics(bySource);
+      expect(result).toHaveLength(1);
+      // google_trends ranks better (real % tier), so it's the representative...
+      expect(result[0].source).toBe('google_trends');
+      // ...but the merged row must still carry the real summary from threads.
+      expect(result[0].summary).toBe('Một ngân hàng tăng lãi suất.');
+    });
+
+    it('keeps the representative\'s own summary when it already has one', () => {
+      const bySource = {
+        google_trends: [row({ id: 'gt', keyword: 'ngân hàng', source: 'google_trends', trendingScore: 1000, summary: 'Tóm tắt từ Google Trends.' })],
+        youtube: [],
+        threads: [row({ id: 'th', keyword: 'ngân hàng', source: 'threads', trendingScore: 100, summary: 'Tóm tắt từ Threads.' })],
+        rss: [],
+        facebook: [],
+      };
+      const result = flattenAndRankHotTopics(bySource);
+      expect(result[0].summary).toBe('Tóm tắt từ Google Trends.');
+    });
   });
 });

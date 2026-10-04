@@ -20,6 +20,10 @@ export interface HotTopicRow {
   // discovered this keyword independently — `source` above stays the
   // highest-metricValue one for any code that only reads a single source,
   // this lists all of them for display.
+  summary?: string | null; // candidate_topics.summary — a short LLM-generated
+  // description of what's actually being said about this topic. null for
+  // google_trends/youtube rows (no source text exists to summarize) or an
+  // rss/threads row the daily summarize-topics job hasn't reached yet.
 }
 
 export function filterByCategory(candidates: CandidateTopic[], category: string): CandidateTopic[] {
@@ -93,6 +97,7 @@ export function buildHotTopicsForCategory(
     shareOfVoice: shareMap.get(c.id) ?? null,
     categoryHint: c.category_hint,
     createdAt: c.created_at,
+    summary: c.summary ?? null,
   }));
   return groupBySource(rows);
 }
@@ -128,6 +133,7 @@ export function buildHotTopicsOverview(
       shareOfVoice,
       categoryHint: c.category_hint,
       createdAt: c.created_at,
+      summary: c.summary ?? null,
     };
   });
   return groupBySource(rows);

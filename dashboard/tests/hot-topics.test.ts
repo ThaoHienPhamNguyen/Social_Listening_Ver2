@@ -100,6 +100,18 @@ describe('buildHotTopicsForCategory', () => {
     // 20 / (20 + 80) * 100 = 20, even though the 80-weight row never appears
     expect(result.rss[0].shareOfVoice).toBe(20);
   });
+
+  it('carries the candidate summary through onto the row', () => {
+    const c = candidate({ id: 'a', summary: 'Tóm tắt test.' });
+    const result = buildHotTopicsForCategory([c], 'tai_chinh');
+    expect(result.rss[0].summary).toBe('Tóm tắt test.');
+  });
+
+  it('defaults summary to null when the candidate has none', () => {
+    const c = candidate({ id: 'a' });
+    const result = buildHotTopicsForCategory([c], 'tai_chinh');
+    expect(result.rss[0].summary).toBeNull();
+  });
 });
 
 describe('buildHotTopicsOverview', () => {
@@ -124,6 +136,12 @@ describe('buildHotTopicsOverview', () => {
     const uncategorized = candidate({ id: 'u', category_hint: [], is_shortlisted: true });
     const result = buildHotTopicsOverview([uncategorized], ['tai_chinh', 'giai_tri', 'du_lich']);
     expect(result.rss[0].shareOfVoice).toBeNull();
+  });
+
+  it('carries the candidate summary through onto the row', () => {
+    const c = candidate({ id: 'a', category_hint: ['tai_chinh'], is_shortlisted: true, summary: 'Tóm tắt test.' });
+    const result = buildHotTopicsOverview([c], ['tai_chinh', 'giai_tri', 'du_lich']);
+    expect(result.rss[0].summary).toBe('Tóm tắt test.');
   });
 });
 
