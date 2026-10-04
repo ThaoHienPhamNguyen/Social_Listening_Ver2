@@ -327,6 +327,8 @@ describe('ingestAllDiscoverySources', () => {
       updateGrowthRate: async () => ({ error: null }),
       markShortlisted: async () => ({ error: null }),
       resetShortlisted: async () => ({ error: null }),
+      getShortlistedCandidates: async () => [],
+      updateSummary: async () => ({ error: null }),
     };
     const sources = [
       fakeSource('google_trends', [{ keyword: 'a', metric_value: 1, growth_rate: 1 }]),

@@ -25,6 +25,11 @@ export interface CandidateTopicRepository {
   // topPerSource per source/day. Called once per run, before recomputing the
   // shortlist, so each run reflects only its own top-N.
   resetShortlisted(date: string): Promise<{ error: string | null }>;
+  // Every is_shortlisted candidate_topics row for the given date, regardless
+  // of source — used by summarize-topics.ts, which filters to rss/threads
+  // itself (this repository has no opinion on which sources get summarized).
+  getShortlistedCandidates(date: string): Promise<CandidateTopic[]>;
+  updateSummary(id: string, summary: string): Promise<{ error: string | null }>;
 }
 
 export class SupabaseCandidateTopicRepository implements CandidateTopicRepository {
@@ -99,6 +104,25 @@ export class SupabaseCandidateTopicRepository implements CandidateTopicRepositor
       .update({ is_shortlisted: false })
       .eq('date', date)
       .eq('is_shortlisted', true);
+    return { error: error?.message ?? null };
+  }
+
+  async getShortlistedCandidates(date: string) {
+    const { data, error } = await this.client
+      .from('candidate_topics')
+      .select('*')
+      .eq('date', date)
+      .eq('is_shortlisted', true)
+      .limit(5000);
+    if (error) throw new Error(error.message);
+    return (data ?? []) as CandidateTopic[];
+  }
+
+  async updateSummary(id: string, summary: string) {
+    const { error } = await this.client
+      .from('candidate_topics')
+      .update({ summary })
+      .eq('id', id);
     return { error: error?.message ?? null };
   }
 }

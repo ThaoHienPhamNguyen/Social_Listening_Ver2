@@ -76,4 +76,14 @@ export class FakeCandidateTopicRepository implements CandidateTopicRepository {
     }
     return { error: null };
   }
+
+  async getShortlistedCandidates(date: string) {
+    return this.candidates.filter((c) => c.date === date && c.is_shortlisted);
+  }
+
+  async updateSummary(id: string, summary: string) {
+    const c = this.candidates.find((x) => x.id === id);
+    if (c) c.summary = summary;
+    return { error: null };
+  }
 }

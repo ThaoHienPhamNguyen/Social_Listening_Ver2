@@ -107,4 +107,23 @@ describe('FakeCandidateTopicRepository', () => {
     expect(count).toBe(0);
     expect(repo.candidates).toHaveLength(0);
   });
+
+  it('getShortlistedCandidates returns only is_shortlisted rows matching the given date', async () => {
+    const repo = new FakeCandidateTopicRepository();
+    repo.candidates.push(
+      { id: '1', source: 'rss', keyword: 'a', date: '2026-10-04', metric_value: 1, growth_rate: null, category_hint: [], is_shortlisted: true },
+      { id: '2', source: 'rss', keyword: 'b', date: '2026-10-04', metric_value: 1, growth_rate: null, category_hint: [], is_shortlisted: false },
+      { id: '3', source: 'rss', keyword: 'c', date: '2026-10-03', metric_value: 1, growth_rate: null, category_hint: [], is_shortlisted: true }
+    );
+    const result = await repo.getShortlistedCandidates('2026-10-04');
+    expect(result.map((c) => c.id)).toEqual(['1']);
+  });
+
+  it('updateSummary sets the summary on the matching row', async () => {
+    const repo = new FakeCandidateTopicRepository();
+    repo.candidates.push({ id: '1', source: 'rss', keyword: 'a', date: '2026-10-04', metric_value: 1, growth_rate: null, category_hint: [], is_shortlisted: true });
+    const { error } = await repo.updateSummary('1', 'Tóm tắt test.');
+    expect(error).toBeNull();
+    expect(repo.candidates[0].summary).toBe('Tóm tắt test.');
+  });
 });
