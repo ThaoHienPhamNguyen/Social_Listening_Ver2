@@ -1,7 +1,8 @@
 import type { DiscoverySource } from './discovery-source';
-import type { RawCandidate } from '../types';
+import type { RawCandidate, TopicArticleData } from '../types';
 import type { ArticleRepository } from './article-repository';
 import type { TopicExtractor } from './topic-extractor';
+import type { TopicArticleDataRepository } from './topic-article-data-repository';
 import { aggregateRssKeywords } from './aggregate-rss-keywords';
 import { extractKeywords } from './keyword-extractor';
 
@@ -29,12 +30,16 @@ export class RssTopicSource implements DiscoverySource {
 
   constructor(
     private repo: Pick<ArticleRepository, 'getRecentTitles'>,
-    private extractor?: TopicExtractor
+    private extractor?: TopicExtractor,
+    private articleLinkRepo?: Pick<TopicArticleDataRepository, 'upsertLinks'>,
+    private now: () => Date = () => new Date()
   ) {}
 
   async fetchCandidates(): Promise<RawCandidate[]> {
     const articles = await this.repo.getRecentTitles(LOOKBACK_DAYS);
     const withTopics: { topics: string[]; categories: string[] }[] = [];
+    const linkRows: Partial<TopicArticleData>[] = [];
+    const date = this.now().toISOString().slice(0, 10);
 
     for (const batch of chunk(articles, CHUNK_SIZE)) {
       const titles = batch.map((a) => a.title);
@@ -61,8 +66,32 @@ export class RssTopicSource implements DiscoverySource {
       }
 
       batch.forEach((article, i) => {
-        withTopics.push({ topics: topicsPerTitle[i] ?? [], categories: article.categories });
+        const topics = topicsPerTitle[i] ?? [];
+        withTopics.push({ topics, categories: article.categories });
+        for (const topic of topics) {
+          linkRows.push({
+            keyword: topic,
+            source: 'rss',
+            date,
+            article_url: article.url,
+            article_title: article.title,
+            article_snippet: article.snippet,
+          });
+        }
       });
+    }
+
+    if (this.articleLinkRepo && linkRows.length > 0) {
+      // Best-effort: a failure here must never block RSS's candidates for
+      // the day from being discovered — it only means those keywords have
+      // no linked source text for the summarize-topics job to find later,
+      // which already degrades gracefully (that topic stays unsummarized).
+      try {
+        const { error } = await this.articleLinkRepo.upsertLinks(linkRows);
+        if (error) console.error(`Failed to persist RSS topic→article links: ${error}`);
+      } catch (err) {
+        console.error(`Failed to persist RSS topic→article links: ${(err as Error).message}`);
+      }
     }
 
     return aggregateRssKeywords(withTopics);

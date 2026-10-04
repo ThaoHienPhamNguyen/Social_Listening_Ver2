@@ -12,6 +12,8 @@ export interface PendingArticle {
 export interface RecentArticleTitle {
   title: string;
   categories: string[];
+  url: string;
+  snippet: string;
 }
 
 export interface ArticleRepository {
@@ -73,7 +75,7 @@ export class SupabaseArticleRepository implements ArticleRepository {
     // keyword-cardinality is already a known follow-up concern separately.
     const { data, error } = await this.client
       .from('articles')
-      .select('title, categories')
+      .select('title, categories, url, snippet')
       .gte('created_at', since)
       .order('created_at', { ascending: true })
       .limit(5000);
@@ -81,6 +83,8 @@ export class SupabaseArticleRepository implements ArticleRepository {
     return (data ?? []).map((row) => ({
       title: row.title as string,
       categories: (row.categories as string[] | null) ?? [],
+      url: row.url as string,
+      snippet: row.snippet as string,
     }));
   }
 }

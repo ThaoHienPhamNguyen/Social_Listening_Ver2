@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { RssTopicSource } from '../src/lib/rss-topic-source';
 import { FakeArticleRepository } from './fakes/fake-article-repository';
 import { FakeTopicExtractor } from './fakes/fake-topic-extractor';
+import { FakeTopicArticleDataRepository } from './fakes/fake-topic-article-data-repository';
 import type { Article } from '../src/types';
 
 function makeArticle(id: string, title: string, categories: string[] = []): Article {
@@ -129,5 +130,70 @@ describe('RssTopicSource', () => {
 
     expect(callCount).toBe(2);
     expect(candidates.some((c) => c.keyword === 'chủ đề riêng')).toBe(true);
+  });
+
+  it('writes one topic_article_data link row per (article, extracted topic) pair', async () => {
+    const repo = new FakeArticleRepository();
+    repo.articles.push(makeArticle('1', 'Novaland chào bán cổ phiếu tỉ lệ 3:1'));
+    const extractor = new FakeTopicExtractor();
+    extractor.topicsByText['Novaland chào bán cổ phiếu tỉ lệ 3:1'] = ['novaland', 'chào bán cổ phiếu'];
+    const articleLinkRepo = new FakeTopicArticleDataRepository();
+    const source = new RssTopicSource(repo, extractor, articleLinkRepo, () => new Date('2026-10-04T10:00:00Z'));
+
+    await source.fetchCandidates();
+
+    expect(articleLinkRepo.links.map((l) => l.keyword).sort()).toEqual(['chào bán cổ phiếu', 'novaland']);
+    expect(articleLinkRepo.links.every((l) => l.article_url === 'https://example.com/1')).toBe(true);
+    expect(articleLinkRepo.links.every((l) => l.date === '2026-10-04')).toBe(true);
+  });
+
+  it('writes no link rows for an article that produced no topics', async () => {
+    const repo = new FakeArticleRepository();
+    repo.articles.push(makeArticle('1', 'Tiêu đề không rõ chủ đề'));
+    const extractor = new FakeTopicExtractor(); // topicsByText has no entry -> []
+    const articleLinkRepo = new FakeTopicArticleDataRepository();
+    const source = new RssTopicSource(repo, extractor, articleLinkRepo);
+
+    await source.fetchCandidates();
+
+    expect(articleLinkRepo.links).toEqual([]);
+  });
+
+  it('still returns candidates when the link-write fails', async () => {
+    const repo = new FakeArticleRepository();
+    repo.articles.push(makeArticle('1', 'Giá vàng tăng mạnh'));
+    const articleLinkRepo = new FakeTopicArticleDataRepository();
+    articleLinkRepo.upsertError = 'simulated failure';
+    const source = new RssTopicSource(repo, undefined, articleLinkRepo);
+
+    const candidates = await source.fetchCandidates();
+
+    expect(candidates.some((c) => c.keyword === 'giá vàng')).toBe(true);
+  });
+
+  it('still returns candidates when articleLinkRepo.upsertLinks throws', async () => {
+    const repo = new FakeArticleRepository();
+    repo.articles.push(makeArticle('1', 'Giá vàng tăng mạnh'));
+    const articleLinkRepo = {
+      upsertLinks: async () => {
+        throw new Error('network error');
+      },
+      getArticlesForDate: async () => [],
+    };
+    const source = new RssTopicSource(repo, undefined, articleLinkRepo);
+
+    const candidates = await source.fetchCandidates();
+
+    expect(candidates.some((c) => c.keyword === 'giá vàng')).toBe(true);
+  });
+
+  it('works with no articleLinkRepo at all (optional dependency)', async () => {
+    const repo = new FakeArticleRepository();
+    repo.articles.push(makeArticle('1', 'Giá vàng tăng mạnh'));
+    const source = new RssTopicSource(repo);
+
+    const candidates = await source.fetchCandidates();
+
+    expect(candidates.some((c) => c.keyword === 'giá vàng')).toBe(true);
   });
 });

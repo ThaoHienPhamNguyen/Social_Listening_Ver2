@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { getRequiredEnv } from './lib/env';
 import { SupabaseCandidateTopicRepository } from './lib/candidate-topic-repository';
 import { SupabaseArticleRepository } from './lib/article-repository';
+import { SupabaseTopicArticleDataRepository } from './lib/topic-article-data-repository';
 import { GoogleTrendsSource } from './lib/google-trends-source';
 import { YouTubeTrendingSource } from './lib/youtube-source';
 import { RssTopicSource } from './lib/rss-topic-source';
@@ -16,6 +17,7 @@ async function main() {
   const client = createClient(getRequiredEnv('SUPABASE_URL'), getRequiredEnv('SUPABASE_SERVICE_KEY'));
   const repo = new SupabaseCandidateTopicRepository(client);
   const articleRepo = new SupabaseArticleRepository(client);
+  const articleLinkRepo = new SupabaseTopicArticleDataRepository(client);
 
   const openaiApiKey = process.env.OPENAI_API_KEY;
   let classifier: CandidateClassifier | undefined;
@@ -29,7 +31,7 @@ async function main() {
 
   const sources: DiscoverySource[] = [
     new GoogleTrendsSource(),
-    new RssTopicSource(articleRepo, rssTopicExtractor),
+    new RssTopicSource(articleRepo, rssTopicExtractor, articleLinkRepo),
   ];
 
   const youtubeApiKey = process.env.YOUTUBE_API_KEY;
