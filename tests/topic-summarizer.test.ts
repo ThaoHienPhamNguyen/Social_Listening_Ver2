@@ -23,6 +23,11 @@ describe('parseSummaryResponse', () => {
     expect(() => parseSummaryResponse(content, 2)).toThrow('no usable entries');
   });
 
+  it('throws when a key is a 1-indexed, out-of-range position (model indexed from 1 instead of 0)', () => {
+    const content = JSON.stringify({ '1': 'a', '2': 'b' });
+    expect(() => parseSummaryResponse(content, 2)).toThrow('out-of-range index key');
+  });
+
   it('nulls out only the malformed index, leaving the others intact', () => {
     const content = JSON.stringify({ '0': 'Tóm tắt hợp lệ.', '1': 42, '2': 'Tóm tắt khác.' });
     expect(parseSummaryResponse(content, 3)).toEqual(['Tóm tắt hợp lệ.', null, 'Tóm tắt khác.']);

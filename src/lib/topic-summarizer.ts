@@ -31,6 +31,26 @@ export function parseSummaryResponse(content: string, topicCount: number): (stri
     throw new Error('Topic summarization response had no usable entries for any topic');
   }
 
+  // A key that's a non-negative integer but falls outside [0, topicCount) is
+  // a strong signal the model 1-indexed its response (e.g. keys "1".."10"
+  // for 10 topics) instead of 0-indexing as instructed. In that case
+  // hasUsableEntry above is still true (the overlapping "1".."9" keys exist
+  // in the expected range), so without this check every topic's summary
+  // would be silently shifted by one position — topic index i would read
+  // key String(i), which under 1-indexing holds the value meant for the
+  // model's "topic i", i.e. OUR topic index i-1's content. A confidently
+  // wrong summary attributed to the wrong topic is worse than no summary,
+  // so treat a shape this wrong as a whole-response failure (same tier as
+  // empty/unparseable content or no usable entries at all), not a
+  // per-topic null.
+  const hasOutOfRangeKey = Object.keys(parsed).some((key) => {
+    const n = Number(key);
+    return Number.isInteger(n) && n >= 0 && n >= topicCount;
+  });
+  if (hasOutOfRangeKey) {
+    throw new Error('Topic summarization response had an out-of-range index key');
+  }
+
   return Array.from({ length: topicCount }, (_, i) => {
     const value = parsed[String(i)];
     if (typeof value !== 'string') return null;

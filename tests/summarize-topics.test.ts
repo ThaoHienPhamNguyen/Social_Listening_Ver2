@@ -82,6 +82,38 @@ describe('summarizeTopics', () => {
     expect(deps.candidateRepo.candidates[0].summary).toBe('Một ngân hàng tăng lãi suất tiết kiệm.');
   });
 
+  it('falls back to a substring scan over all posts for a Threads keyword with no exact-match rows (e.g. it was only ever topics[1]/topics[2], never topics[0], for every post that mentioned it)', async () => {
+    const deps = makeDeps();
+    deps.candidateRepo.candidates.push(candidate({ id: '1', source: 'threads', keyword: 'lãi suất' }));
+    // No post is tagged with keyword 'lãi suất' directly — deep-crawl.ts only
+    // tags topics[0], which was 'ngân hàng' for this post, even though the
+    // post's text actually discusses 'lãi suất' too.
+    deps.socialRepo.posts.push({
+      id: 'p1',
+      keyword: 'ngân hàng',
+      source: 'threads',
+      date: TODAY,
+      post_url: 'https://threads.net/p/1',
+      text_content: 'Ngân hàng X vừa tăng lãi suất tiết kiệm.',
+      like_count: null,
+      reply_count: null,
+      repost_count: null,
+      quote_count: null,
+      share_count: null,
+      view_count: null,
+      posted_at: null,
+    });
+    deps.summarizer.summaryByKeyword['lãi suất'] = 'Một ngân hàng tăng lãi suất.';
+
+    const result = await summarizeTopics(deps);
+
+    expect(result.summarized).toBe(1);
+    expect(deps.summarizer.calls.flat()).toEqual([
+      { keyword: 'lãi suất', texts: ['Ngân hàng X vừa tăng lãi suất tiết kiệm.'] },
+    ]);
+    expect(deps.candidateRepo.candidates[0].summary).toBe('Một ngân hàng tăng lãi suất.');
+  });
+
   it('never summarizes a google_trends or youtube candidate', async () => {
     const deps = makeDeps();
     deps.candidateRepo.candidates.push(

@@ -159,6 +159,26 @@ describe('RssTopicSource', () => {
     expect(articleLinkRepo.links).toEqual([]);
   });
 
+  it('dedupes a repeated keyword from the extractor into exactly one link row per article (would otherwise collide within one upsert batch)', async () => {
+    const repo = new FakeArticleRepository();
+    const title = 'Khách du lịch đổ về Phú Quốc dịp lễ';
+    repo.articles.push(makeArticle('1', title));
+    const extractor = new FakeTopicExtractor();
+    // Simulates extractKeywords()'s regex fallback returning the same
+    // keyword twice for one title (entity-phrase pass + bigram pass both
+    // producing 'phú quốc').
+    extractor.topicsByText[title] = ['phú quốc', 'phú quốc', 'quốc dịp'];
+    const articleLinkRepo = new FakeTopicArticleDataRepository();
+    const source = new RssTopicSource(repo, extractor, articleLinkRepo);
+
+    await source.fetchCandidates();
+
+    const matching = articleLinkRepo.links.filter(
+      (l) => l.keyword === 'phú quốc' && l.article_url === 'https://example.com/1'
+    );
+    expect(matching.length).toBe(1);
+  });
+
   it('still returns candidates when the link-write fails', async () => {
     const repo = new FakeArticleRepository();
     repo.articles.push(makeArticle('1', 'Giá vàng tăng mạnh'));

@@ -40,7 +40,9 @@ function compareByRank(a: HotTopicRow, b: HotTopicRow): number {
 // by (compareByRank), so a merged row is never ranked worse than showing
 // that source alone would have been. shareOfVoice is dropped to null — it's
 // a % of one source's own daily total, and summing or averaging that across
-// sources with different totals wouldn't mean anything.
+// sources with different totals wouldn't mean anything. summary follows the
+// representative row's own value when it's non-null, falling back to the
+// first non-null summary found among the other rows in the group otherwise.
 function mergeSameKeyword<T extends HotTopicRow>(rows: T[]): T[] {
   const byKeyword = new Map<string, T[]>();
   for (const row of rows) {

@@ -2,7 +2,7 @@ import type { CandidateTopicRepository } from './lib/candidate-topic-repository'
 import type { TopicArticleDataRepository } from './lib/topic-article-data-repository';
 import type { TopicSocialDataRepository } from './lib/topic-social-data-repository';
 import type { TopicSummarizer } from './lib/topic-summarizer';
-import type { CandidateTopic } from './types';
+import type { CandidateTopic, TopicSocialData } from './types';
 
 const SUMMARIZABLE_SOURCES = new Set<CandidateTopic['source']>(['rss', 'threads']);
 const CHUNK_SIZE = 10;
@@ -25,6 +25,29 @@ function chunk<T>(items: T[], size: number): T[][] {
   const chunks: T[][] = [];
   for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size));
   return chunks;
+}
+
+// deep-crawl.ts tags each topic_social_data row with only the post's FIRST
+// extracted topic (`keyword: topics[0]`) — one row per post. But
+// aggregateThreadsKeywords credits a post's engagement to EVERY topic it
+// contains, not just the first. So a shortlisted Threads keyword that was
+// never any post's topics[0] (e.g. it was always topics[1] or topics[2])
+// has zero rows under that exact keyword in postsByKeyword, even though
+// real posts actually discuss it. Falling back to a substring scan over
+// every fetched post recovers that linked text instead of leaving the
+// candidate unsummarized forever with no error or visibility. The fallback
+// only runs when the exact match is empty, so an exact-match post is never
+// displaced by an unrelated substring match.
+function textsForThreadsKeyword(
+  keyword: string,
+  posts: TopicSocialData[],
+  postsByKeyword: Map<string, string[]>
+): string[] {
+  const exact = postsByKeyword.get(keyword);
+  if (exact && exact.length > 0) return exact;
+
+  const needle = keyword.toLowerCase();
+  return posts.filter((p) => p.text_content.toLowerCase().includes(needle)).map((p) => p.text_content);
 }
 
 export async function summarizeTopics(deps: SummarizeDeps): Promise<SummarizeResult> {
@@ -58,7 +81,10 @@ export async function summarizeTopics(deps: SummarizeDeps): Promise<SummarizeRes
 
   const inputs = candidates.map((c) => ({
     candidate: c,
-    texts: c.source === 'rss' ? articlesByKeyword.get(c.keyword) ?? [] : postsByKeyword.get(c.keyword) ?? [],
+    texts:
+      c.source === 'rss'
+        ? articlesByKeyword.get(c.keyword) ?? []
+        : textsForThreadsKeyword(c.keyword, posts, postsByKeyword),
   }));
   // A candidate with no linked source text (link write failed earlier, or
   // data from before this feature existed) can't be grounded in anything

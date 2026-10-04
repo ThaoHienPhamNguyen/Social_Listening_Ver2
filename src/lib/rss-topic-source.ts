@@ -68,7 +68,19 @@ export class RssTopicSource implements DiscoverySource {
       batch.forEach((article, i) => {
         const topics = topicsPerTitle[i] ?? [];
         withTopics.push({ topics, categories: article.categories });
-        for (const topic of topics) {
+        // Dedupe before building link rows: extractKeywords()'s regex
+        // fallback can return the same keyword twice for one title (its
+        // entity-phrase pass and bigram pass can independently produce the
+        // same string), and all of a run's linkRows go into ONE upsertLinks
+        // call keyed on (source, keyword, article_url) — Postgres rejects an
+        // upsert outright if that conflict target repeats within one batch
+        // ("ON CONFLICT DO UPDATE command cannot affect row a second time"),
+        // which would silently fail the whole day's link write for every
+        // article in the batch, not just this one. Same reasoning as
+        // deep-crawl.ts's post_url dedupe before its upsert, and the same
+        // dedupe aggregateRssKeywords already does with `new Set` for
+        // counting purposes.
+        for (const topic of new Set(topics)) {
           linkRows.push({
             keyword: topic,
             source: 'rss',
