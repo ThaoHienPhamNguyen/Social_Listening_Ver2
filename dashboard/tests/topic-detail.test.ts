@@ -104,4 +104,35 @@ describe('computeTopicDetail', () => {
       { date: '2026-08-18', totalEngagement: 15, postCount: 2 },
     ]);
   });
+
+  it('resolves summary from the latest-dated candidate row that has one', () => {
+    const result = computeTopicDetail(
+      'bitcoin',
+      [
+        candidate({ id: 'a', date: '2026-08-17', summary: 'Tóm tắt cũ.' }),
+        candidate({ id: 'b', date: '2026-08-18', summary: 'Tóm tắt mới nhất.' }),
+      ],
+      [],
+      ['2026-08-17', '2026-08-18']
+    );
+    expect(result?.summary).toBe('Tóm tắt mới nhất.');
+  });
+
+  it('skips a null/empty summary in favor of an earlier non-empty one', () => {
+    const result = computeTopicDetail(
+      'bitcoin',
+      [
+        candidate({ id: 'a', date: '2026-08-17', summary: 'Tóm tắt có nội dung.' }),
+        candidate({ id: 'b', date: '2026-08-18', summary: '' }),
+      ],
+      [],
+      ['2026-08-17', '2026-08-18']
+    );
+    expect(result?.summary).toBe('Tóm tắt có nội dung.');
+  });
+
+  it('returns null summary when no row has one', () => {
+    const result = computeTopicDetail('bitcoin', [candidate({ date: '2026-08-18' })], [], ['2026-08-18']);
+    expect(result?.summary).toBeNull();
+  });
 });

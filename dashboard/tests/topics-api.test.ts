@@ -85,7 +85,7 @@ describe('getTopicsForDate', () => {
     expect(result.topics.map((t) => t.keyword)).toEqual(['high-topic', 'low-topic']);
   });
 
-  it('shapes each topic with keyword/source/sources/category/metricValue/trendingScore/shareOfVoice', async () => {
+  it('shapes each topic with keyword/source/sources/category/metricValue/trendingScore/shareOfVoice/summary', async () => {
     const reader = new FakeCandidateTopicsReader([candidate()]);
     const result = await getTopicsForDate(reader, 'tai_chinh');
     expect(result.topics).toEqual([
@@ -97,8 +97,15 @@ describe('getTopicsForDate', () => {
         metricValue: 10,
         trendingScore: 50,
         shareOfVoice: 100,
+        summary: null,
       },
     ]);
+  });
+
+  it('passes a non-null summary through', async () => {
+    const reader = new FakeCandidateTopicsReader([candidate({ summary: 'Tóm tắt test.' })]);
+    const result = await getTopicsForDate(reader, 'tai_chinh');
+    expect(result.topics[0].summary).toBe('Tóm tắt test.');
   });
 
   it('lists every source on `sources` when the same keyword was found by more than one', async () => {

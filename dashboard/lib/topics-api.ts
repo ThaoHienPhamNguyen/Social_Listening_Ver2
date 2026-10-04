@@ -13,6 +13,9 @@ export interface TopicApiItem {
   metricValue: number;
   trendingScore: number | null;
   shareOfVoice: number | null;
+  summary: string | null; // what's actually being said about this topic —
+  // null for google_trends/youtube (no source text exists to summarize)
+  // or an rss/threads topic the daily summarization job hasn't reached yet.
 }
 
 export interface TopicsApiResult {
@@ -41,6 +44,7 @@ export async function getTopicsForDate(
     metricValue: row.metricValue,
     trendingScore: row.trendingScore,
     shareOfVoice: row.shareOfVoice,
+    summary: row.summary ?? null,
   }));
   return { date: resolvedDate, topics };
 }

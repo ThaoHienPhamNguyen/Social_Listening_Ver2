@@ -6,6 +6,7 @@ export interface TopicDetailData {
   keyword: string;
   category: string | null;
   sources: CandidateTopic['source'][];
+  summary: string | null;
   trendingScoreTimeline: { date: string; score: number | null }[];
   engagementTimeline: { date: string; totalEngagement: number; postCount: number }[];
 }
@@ -41,6 +42,16 @@ function resolveSources(candidateHistory: CandidateTopic[]): CandidateTopic['sou
   return result;
 }
 
+// Same "latest date wins" resolution convention as resolveCategory, but
+// skipping any row whose summary is null/empty rather than tracking "the
+// date of whichever row last supplied a value" — a topic can have several
+// same-day rows (one per source) and only some of them get summarized.
+function resolveSummary(candidateHistory: CandidateTopic[]): string | null {
+  const withSummary = candidateHistory.filter((c) => c.summary != null && c.summary !== '');
+  if (withSummary.length === 0) return null;
+  return [...withSummary].sort((a, b) => b.date.localeCompare(a.date))[0].summary!;
+}
+
 export function computeTopicDetail(
   keyword: string,
   candidateHistory: CandidateTopic[],
@@ -71,6 +82,7 @@ export function computeTopicDetail(
     keyword,
     category: resolveCategory(candidateHistory),
     sources: resolveSources(candidateHistory),
+    summary: resolveSummary(candidateHistory),
     trendingScoreTimeline,
     engagementTimeline,
   };

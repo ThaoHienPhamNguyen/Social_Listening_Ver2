@@ -77,6 +77,13 @@ export default async function TopicDetailPage({ params }: { params: Promise<{ ke
           ))}
         </div>
 
+        {detail.summary && (
+          <div className="bg-surface border border-line rounded-card shadow-card p-6">
+            <h2 className="text-base font-bold text-ink mb-2">Nội dung đang nói gì</h2>
+            <p className="text-sm text-ink-2">{detail.summary}</p>
+          </div>
+        )}
+
         <div className="bg-surface border border-line rounded-card shadow-card p-6">
           <h2 className="text-base font-bold text-ink mb-4">
             Trending Score — 7 ngày qua
