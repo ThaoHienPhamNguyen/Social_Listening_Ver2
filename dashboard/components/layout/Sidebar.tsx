@@ -45,6 +45,23 @@ export function Sidebar() {
             Overview
           </Link>
           <Link
+            href="/ban-tin"
+            aria-current={pathname === '/ban-tin' ? 'page' : undefined}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-sm font-medium transition-colors ${
+              pathname === '/ban-tin'
+                ? 'bg-brand-faint text-brand font-semibold'
+                : 'text-ink-2 hover:bg-muted hover:text-ink'
+            }`}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 4h16v12H8l-4 4V4z" />
+              <line x1="7" y1="8" x2="17" y2="8" />
+              <line x1="7" y1="11" x2="17" y2="11" />
+              <line x1="7" y1="14" x2="13" y2="14" />
+            </svg>
+            Bản tin hôm nay
+          </Link>
+          <Link
             href="/trending"
             aria-current={pathname === '/trending' ? 'page' : undefined}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-sm font-medium transition-colors ${
