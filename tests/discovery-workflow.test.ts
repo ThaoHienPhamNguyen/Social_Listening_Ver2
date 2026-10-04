@@ -5,8 +5,14 @@ import { load } from 'js-yaml';
 describe('.github/workflows/discovery-ingestion.yml', () => {
   const doc = load(readFileSync('.github/workflows/discovery-ingestion.yml', 'utf8')) as any;
 
-  it('defines all four jobs', () => {
-    expect(Object.keys(doc.jobs)).toEqual(['discovery-ingest', 'deep-crawl', 'rank-and-select', 'aggregate-engagement']);
+  it('defines all five jobs', () => {
+    expect(Object.keys(doc.jobs)).toEqual([
+      'discovery-ingest',
+      'deep-crawl',
+      'rank-and-select',
+      'aggregate-engagement',
+      'summarize-topics',
+    ]);
   });
 
   it('gates rank-and-select on both writer jobs via needs', () => {
@@ -53,5 +59,18 @@ describe('.github/workflows/discovery-ingestion.yml', () => {
   it('does not require a new secret for aggregate-engagement beyond Supabase', () => {
     const step = doc['jobs']['aggregate-engagement']['steps'].find((s: any) => s.run === 'npm run aggregate-engagement');
     expect(Object.keys(step?.env ?? {})).toEqual(['SUPABASE_URL', 'SUPABASE_SERVICE_KEY']);
+  });
+
+  it('gates summarize-topics on rank-and-select and deep-crawl via needs', () => {
+    expect(doc['jobs']['summarize-topics']['needs']).toEqual(['rank-and-select', 'deep-crawl']);
+  });
+
+  it('runs summarize-topics even if an earlier job failed, as long as it was not cancelled', () => {
+    expect(doc['jobs']['summarize-topics']['if']).toBe('${{ !cancelled() }}');
+  });
+
+  it('passes OPENAI_API_KEY through to summarize-topics', () => {
+    const step = doc['jobs']['summarize-topics']['steps'].find((s: any) => s.run === 'npm run summarize-topics');
+    expect(step?.env?.OPENAI_API_KEY).toBe('${{ secrets.OPENAI_API_KEY }}');
   });
 });
